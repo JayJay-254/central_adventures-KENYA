@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: central-adventures
+    env: python
+    branch: main
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput"
+    startCommand: "gunicorn central_adventures.wsgi:application --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: central_adventures.settings
+      - key: DEBUG
+        value: 'False'
+      - key: SECRET_KEY
+        # keep a secret in the Render dashboard, or set a secure value here
+        value: ''
+      - key: DATABASE_URL
+        value: ''
