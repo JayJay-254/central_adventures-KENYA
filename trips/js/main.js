@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (contactForm) {
         // Initialize EmailJS (user needs to add their own public key)
         if (typeof emailjs !== 'undefined') {
-            emailjs.init('YOUR_PUBLIC_KEY');
+            emailjs.init('q3_xN54dd37s7rGn1');
         }
         
         contactForm.addEventListener('submit', function(e) {
@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Send email using EmailJS
             if (typeof emailjs !== 'undefined') {
-                emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+                emailjs.send('service_t9bdrid', 'service_t9bdrid', templateParams)
                     .then(function(response) {
                         showSuccess('Message sent successfully! We\'ll get back to you soon.');
                         contactForm.reset();
