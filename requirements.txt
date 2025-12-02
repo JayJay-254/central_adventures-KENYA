@@ -1,0 +1,8 @@
+django>=4.2
+channels>=4.0
+djangorestframework
+gunicorn
+whitenoise
+dj-database-url
+psycopg2-binary
+django-crontab
