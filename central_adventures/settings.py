@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-rg8e*q3s9dx%0w)9h#u*)7fjw8c$9db9(-in4lf9pc$zl&_81k'
+# Read secret key from env, fall back to development key for local dev
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-rg8e*q3s9dx%0w)9h#u*)7fjw8c$9db9(-in4lf9pc$zl&_81k')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG should be False in production. Control via environment variable.
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# Allowed hosts default to all for simple deploy; override with env var for security.
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -43,6 +46,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -70,6 +74,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'central_adventures.wsgi.application'
 
+# Use dj-database-url when DATABASE_URL is provided (e.g. Render Postgres)
+try:
+    import dj_database_url
+except Exception:
+    dj_database_url = None
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -80,6 +90,13 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# If a DATABASE_URL is provided (Render/Postgres), parse it
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and dj_database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    }
 
 
 # Password validation
@@ -117,7 +134,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_URL = 'static/'
 STATIC_DIRECTORIES = [BASE_DIR / 'static']
+
+# WhiteNoise static files storage (production)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (user-uploaded)
 MEDIA_URL = '/media/'
@@ -127,3 +149,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Additional production guidance: ensure SECRET_KEY and DEBUG are set in env.

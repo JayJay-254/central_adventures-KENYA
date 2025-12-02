@@ -47,7 +47,7 @@ class AdminRole(models.Model):
 # Gallery Images
 class GalleryImage(models.Model):
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
-    image_url = models.CharField(max_length=500)
+    image_url = models.ImageField(upload_to='gallery/', null=True, blank=True)
     caption = models.TextField()
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
 
