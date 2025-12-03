@@ -9,7 +9,9 @@
                 <p class="hero-subtitle">Discover Kenya's Hidden Gems</p>
                 <div class="hero-buttons">
                     <a href="#about" class="btn btn-primary scroll-link">About Us &rarr;</a>
-                    <a href="{% url 'signup' %}" class="btn btn-secondary">Get Started</a>
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'signup' %}" class="btn btn-secondary">Get Started</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -39,7 +41,11 @@
                     
                     <div class="cta-box">
                         <p><strong>Ready to start your adventure?</strong></p>
-                        <a href="{% url 'signup' %}" class="btn btn-primary">Join Us Today</a>
+                        {% if not user.is_authenticated %}
+                            <a href="{% url 'signup' %}" class="btn btn-primary">Join Us Today</a>
+                        {% else %}
+                            <a href="{% url 'trips' %}" class="btn btn-primary">Browse Trips</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

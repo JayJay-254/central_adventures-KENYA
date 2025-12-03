@@ -4,68 +4,197 @@
 {% block content %}
 <section class="destinations-section container">
     <h2 class="page-title">Our Destinations</h2>
-    <p class="page-subtitle">Explore upcoming adventures across Kenya</p>
+    <p class="page-subtitle">Explore adventures across Kenya</p>
+
+    <!-- Trip Status Filter -->
+    <div class="trip-filters">
+        <a href="{% url 'trips' %}?status=all" class="filter-btn {% if status_filter == 'all' or status_filter == '' %}active{% endif %}">
+            All Trips
+        </a>
+        <a href="{% url 'trips' %}?status=upcoming" class="filter-btn {% if status_filter == 'upcoming' %}active{% endif %}">
+            Upcoming
+        </a>
+        <a href="{% url 'trips' %}?status=success" class="filter-btn {% if status_filter == 'success' %}active{% endif %}">
+            Successful
+        </a>
+        <a href="{% url 'trips' %}?status=cancelled" class="filter-btn {% if status_filter == 'cancelled' %}active{% endif %}">
+            Cancelled
+        </a>
+    </div>
 
     <div class="destinations-grid" id="destinationsGrid">
-        <!-- Destinations will be loaded dynamically from backend -->
-        <!-- Dummy data for frontend development -->
-        <div class="destination-card" data-destination="1" data-backend-id="">
-            <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1589182373726-e4f658ab50f0?w=1200');">
-                <div class="destination-overlay">
-                    <h3 class="destination-title">Mount Kenya Expedition</h3>
-                    <p class="destination-description">Experience the thrill of climbing Africa's second-highest peak. This 5-day expedition takes you through diverse ecosystems...</p>
-                    <button class="btn btn-small view-details-btn">View Details</button>
+        {% if trips %}
+            {% for trip in trips %}
+            <div class="destination-card" data-trip-id="{{ trip.id }}">
+                <div class="destination-image" style="background-image: url('{% if trip.image_url.url %}{{ trip.image_url.url }}{% else %}https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200{% endif %}');">
+                    <div class="trip-status-badge badge-{{ trip.status }}">{{ trip.get_status_display }}</div>
+                    <div class="destination-overlay">
+                        <h3 class="destination-title">{{ trip.title }}</h3>
+                        <p class="destination-description">{{ trip.description_short }}</p>
+                        <div class="trip-meta-mini">
+                            <span><i class="fas fa-map-marker-alt"></i> {{ trip.location }}</span>
+                            <span><i class="fas fa-calendar"></i> {{ trip.date|date:"M d, Y" }}</span>
+                        </div>
+                        <a href="{% url 'trip_details' trip.id %}" class="btn btn-small view-details-btn">View Details</a>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="destination-card" data-destination="2" data-backend-id="">
-            <div class="destination-image" style="background-image: url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1200');">
-                <div class="destination-overlay">
-                    <h3 class="destination-title">Diani Beach Getaway</h3>
-                    <p class="destination-description">Relax on pristine white sands and crystal-clear waters. This 3-day coastal retreat includes snorkeling, beach games...</p>
-                    <button class="btn btn-small view-details-btn">View Details</button>
-                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-trips">
+                <p>No trips available for the selected filter.</p>
+                <a href="{% url 'trips' %}" class="btn btn-primary">View All Trips</a>
             </div>
-        </div>
-    </div>
-
-    <!-- Destination Detail Modal -->
-    <div class="modal" id="destinationModal">
-        <div class="modal-content">
-            <button class="modal-close" id="closeModal">&times;</button>
-            <div class="modal-body">
-                <div class="modal-image" id="modalImage"></div>
-                <div class="modal-details">
-                    <h2 id="modalTitle"></h2>
-                    <div class="detail-section">
-                        <h3>Description</h3>
-                        <p id="modalDescription"></p>
-                    </div>
-                    <div class="detail-section">
-                        <h3>Location</h3>
-                        <p id="modalLocation"></p>
-                    </div>
-                    <div class="detail-section">
-                        <h3>Duration</h3>
-                        <p id="modalDuration"></p>
-                    </div>
-                    <div class="detail-section">
-                        <h3>What to Expect</h3>
-                        <p id="modalExpectations"></p>
-                    </div>
-                    <div class="detail-section">
-                        <h3>What to Bring</h3>
-                        <p id="modalRequirements"></p>
-                    </div>
-                    <div class="detail-section">
-                        <h3>Price</h3>
-                        <p id="modalPrice" class="price-tag"></p>
-                    </div>
-                    <button class="btn btn-primary btn-block">Book Now</button>
-                </div>
-            </div>
-        </div>
+        {% endif %}
     </div>
 </section>
+
+<style>
+.trip-filters {
+    display: flex;
+    gap: 12px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    background: var(--sand-light);
+    color: var(--text-dark);
+    text-decoration: none;
+    border-radius: 20px;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+    font-weight: 500;
+}
+
+.filter-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.destinations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.destination-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+    position: relative;
+}
+
+.destination-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.destination-image {
+    width: 100%;
+    height: 300px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    transition: all 0.3s;
+}
+
+.destination-card:hover .destination-image {
+    background-position: center 0;
+}
+
+.trip-status-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-upcoming {
+    background-color: rgba(30, 144, 255, 0.9);
+    color: white;
+}
+
+.badge-success {
+    background-color: rgba(16, 185, 129, 0.9);
+    color: white;
+}
+
+.badge-cancelled {
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+.destination-overlay {
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+    padding: 24px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    color: white;
+}
+
+.destination-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.destination-description {
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.trip-meta-mini {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.trip-meta-mini span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.view-details-btn {
+    width: fit-content;
+    margin-top: 8px;
+}
+
+.no-trips {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+}
+
+.no-trips p {
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+</style>
 {% endblock %}

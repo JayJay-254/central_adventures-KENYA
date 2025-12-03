@@ -18,8 +18,18 @@ def home(request):
 # Trips landing page (after login)
 @login_required
 def trips(request):
-    trip_list = Trip.objects.all()
-    return render(request, "destinations.html", {"trips": trip_list})
+    # Get filter parameter from URL (upcoming, success, cancelled, all)
+    status_filter = request.GET.get('status', 'all')
+    
+    if status_filter == 'all':
+        trip_list = Trip.objects.all()
+    else:
+        trip_list = Trip.objects.filter(status=status_filter)
+    
+    return render(request, "destinations.html", {
+        "trips": trip_list,
+        "status_filter": status_filter
+    })
 
 # Trip detail page
 @login_required
@@ -71,7 +81,8 @@ This message was sent via the contact form on the Central Adventures website.
                 print(f"Email sending failed: {e}")
                 messages.warning(request, 'Your message has been saved, but email notification failed.')
             
-            return redirect('home')
+            # Clear form after successful submission
+            form = ContactForm()
     else:
         form = ContactForm()
     # Use the `contacts.html` template for the contact page

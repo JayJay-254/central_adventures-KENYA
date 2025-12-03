@@ -13,6 +13,12 @@ class TripCategory(models.Model):
 
 # Trips
 class Trip(models.Model):
+    STATUS_CHOICES = [
+        ('upcoming', 'Upcoming'),
+        ('success', 'Successful'),
+        ('cancelled', 'Cancelled'),
+    ]
+    
     title = models.CharField(max_length=200)
     category = models.ForeignKey(TripCategory, on_delete=models.CASCADE)
     location = models.CharField(max_length=200)
@@ -21,6 +27,7 @@ class Trip(models.Model):
     description_short = models.CharField(max_length=255)
     description_full = models.TextField()
     featured = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
 
 # Bookings
 class Booking(models.Model):
@@ -76,6 +83,23 @@ class ContactMessage(models.Model):
     subject = models.CharField(max_length=200)
     message = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
+
+
+# Team/Management
+class TeamMember(models.Model):
+    name = models.CharField(max_length=200)
+    position = models.CharField(max_length=200)
+    image = models.ImageField(upload_to='team/', null=True, blank=True)
+    contact = models.CharField(max_length=200, blank=True)
+    bio = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        return f"{self.name} - {self.position}"
 
 
 # Optional user profile for storing extra signup details
