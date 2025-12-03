@@ -25,4 +25,9 @@ urlpatterns = [
     path('api/gallery/<int:image_id>/comment/', views.add_comment, name='add_comment'),
     path('api/gallery/<int:image_id>/comments/', views.get_comments, name='get_comments'),
     path('api/gallery/<int:image_id>/download/', views.download_media, name='download_media'),
+    # Comment management
+    path('api/comment/<int:comment_id>/delete/', views.delete_comment, name='delete_comment'),
+    path('api/comment/<int:comment_id>/edit/', views.edit_comment, name='edit_comment'),
+    path('api/comment/<int:comment_id>/reply/', views.reply_comment, name='reply_comment'),
+    path('api/comment/<int:comment_id>/like/', views.toggle_comment_like, name='toggle_comment_like'),
 ]

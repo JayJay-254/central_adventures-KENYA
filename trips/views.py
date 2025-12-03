@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import JsonResponse, FileResponse
-from .models import Trip, Booking, ChatMessage, UserProfile, TeamMember, GalleryImage, Like, Comment
+from .models import Trip, Booking, ChatMessage, UserProfile, TeamMember, GalleryImage, Like, Comment, CommentLike
 from .forms import ContactForm
 from .locations import KENYA_LOCATIONS
 from django.contrib.auth.models import User
@@ -243,7 +243,7 @@ def edit_profile_page(request):
         profile.save()
 
         messages.success(request, 'Profile updated successfully.')
-        return redirect('edit_profile')
+        return redirect('trips')
 
     # GET - prefill form
     context = {
@@ -376,7 +376,7 @@ def download_media(request, image_id):
 def get_comments(request, image_id):
     """Get all comments for a gallery image"""
     image = get_object_or_404(GalleryImage, id=image_id)
-    comments = image.comments.all()
+    comments = image.comments.filter(parent_comment__isnull=True)  # Get top-level comments only
     
     comments_data = []
     for comment in comments:
@@ -384,12 +384,163 @@ def get_comments(request, image_id):
         if hasattr(comment.user, 'profile') and comment.user.profile.profile_picture:
             avatar = comment.user.profile.profile_picture.url
         
+        # Get comment likes/dislikes
+        likes = comment.likes.filter(is_like=True).count()
+        dislikes = comment.likes.filter(is_like=False).count()
+        user_like = comment.likes.filter(user=request.user).first()
+        user_like_status = None
+        if user_like:
+            user_like_status = 'like' if user_like.is_like else 'dislike'
+        
+        # Get replies
+        replies_data = []
+        for reply in comment.replies.all():
+            reply_avatar = ''
+            if hasattr(reply.user, 'profile') and reply.user.profile.profile_picture:
+                reply_avatar = reply.user.profile.profile_picture.url
+            
+            reply_likes = reply.likes.filter(is_like=True).count()
+            reply_dislikes = reply.likes.filter(is_like=False).count()
+            
+            replies_data.append({
+                'id': reply.id,
+                'username': reply.user.username,
+                'avatar': reply_avatar,
+                'comment': reply.comment,
+                'time': reply.time.strftime('%b %d, %Y %H:%M'),
+                'is_owner': reply.user == request.user,
+                'likes': reply_likes,
+                'dislikes': reply_dislikes
+            })
+        
         comments_data.append({
             'id': comment.id,
             'username': comment.user.username,
             'avatar': avatar,
             'comment': comment.comment,
-            'time': comment.time.strftime('%b %d, %Y %H:%M')
+            'time': comment.time.strftime('%b %d, %Y %H:%M'),
+            'is_owner': comment.user == request.user,
+            'likes': likes,
+            'dislikes': dislikes,
+            'user_like_status': user_like_status,
+            'replies': replies_data
         })
     
     return JsonResponse({'comments': comments_data})
+
+
+# Delete Comment
+@login_required
+def delete_comment(request, comment_id):
+    """Delete a comment (only comment owner or admin)"""
+    if request.method == 'DELETE':
+        comment = get_object_or_404(Comment, id=comment_id)
+        
+        if comment.user != request.user and not request.user.is_staff:
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+        
+        comment.delete()
+        return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False}, status=400)
+
+
+# Edit Comment
+@login_required
+def edit_comment(request, comment_id):
+    """Edit a comment (only comment owner)"""
+    if request.method == 'POST':
+        comment = get_object_or_404(Comment, id=comment_id)
+        
+        if comment.user != request.user:
+            return JsonResponse({'success': False, 'error': 'Unauthorized'}, status=403)
+        
+        new_text = request.POST.get('comment', '').strip()
+        if not new_text:
+            return JsonResponse({'success': False, 'error': 'Comment cannot be empty'}, status=400)
+        
+        comment.comment = new_text
+        comment.save()
+        
+        return JsonResponse({
+            'success': True,
+            'comment': new_text,
+            'time': comment.time.strftime('%b %d, %Y %H:%M')
+        })
+    
+    return JsonResponse({'success': False}, status=400)
+
+
+# Reply to Comment
+@login_required
+def reply_comment(request, comment_id):
+    """Add reply to a comment"""
+    if request.method == 'POST':
+        parent = get_object_or_404(Comment, id=comment_id)
+        reply_text = request.POST.get('comment', '').strip()
+        
+        if not reply_text:
+            return JsonResponse({'success': False, 'error': 'Reply cannot be empty'}, status=400)
+        
+        reply = Comment.objects.create(
+            user=request.user,
+            image=parent.image,
+            comment=reply_text,
+            parent_comment=parent
+        )
+        
+        avatar = ''
+        if hasattr(reply.user, 'profile') and reply.user.profile.profile_picture:
+            avatar = reply.user.profile.profile_picture.url
+        
+        return JsonResponse({
+            'success': True,
+            'reply_id': reply.id,
+            'username': reply.user.username,
+            'avatar': avatar,
+            'comment': reply.comment,
+            'time': reply.time.strftime('%b %d, %Y %H:%M')
+        })
+    
+    return JsonResponse({'success': False}, status=400)
+
+
+# Like/Dislike Comment
+@login_required
+def toggle_comment_like(request, comment_id):
+    """Toggle like/dislike on a comment"""
+    if request.method == 'POST':
+        comment = get_object_or_404(Comment, id=comment_id)
+        is_like = request.POST.get('is_like', 'true').lower() == 'true'
+        
+        like, created = CommentLike.objects.get_or_create(
+            user=request.user,
+            comment=comment,
+            defaults={'is_like': is_like}
+        )
+        
+        if not created:
+            # Toggle or remove
+            if like.is_like == is_like:
+                # Same action, remove it
+                like.delete()
+                status = None
+            else:
+                # Different action, update it
+                like.is_like = is_like
+                like.save()
+                status = 'like' if is_like else 'dislike'
+        else:
+            status = 'like' if is_like else 'dislike'
+        
+        likes = comment.likes.filter(is_like=True).count()
+        dislikes = comment.likes.filter(is_like=False).count()
+        
+        return JsonResponse({
+            'success': True,
+            'likes': likes,
+            'dislikes': dislikes,
+            'user_like_status': status
+        })
+    
+    return JsonResponse({'success': False}, status=400)

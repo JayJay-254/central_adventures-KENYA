@@ -3,7 +3,12 @@
 {% block title %}Edit Profile - Central Adventures{% endblock %}
 {% block content %}
 <section class="edit-profile-section container-small">
-    <h2 class="page-title">Edit Profile</h2>
+    <div class="profile-header">
+        <h2 class="page-title">Edit Profile</h2>
+        <a href="{% url 'trips' %}" class="close-btn" title="Close">
+            <i class="fas fa-times"></i>
+        </a>
+    </div>
     <p class="page-subtitle">Update your account information</p>
 
     <form id="editProfileForm" class="profile-form" method="post" enctype="multipart/form-data">
@@ -90,6 +95,66 @@
         </div>
     </form>
 </section>
+
+<style>
+.profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.profile-header .page-title {
+    margin: 0;
+    flex: 1;
+}
+
+.close-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--sand-light);
+    border-radius: 50%;
+    color: var(--text-dark);
+    text-decoration: none;
+    transition: all 0.2s;
+    font-size: 1.3rem;
+}
+
+.close-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+    flex-wrap: wrap;
+}
+
+.form-actions .btn {
+    flex: 1;
+    min-width: 150px;
+}
+
+@media (max-width: 600px) {
+    .profile-header {
+        margin-bottom: 20px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+</style>
 {% endblock %}
 {% block extra_scripts %}
     <script src="{% static 'js/profile-preview.js' %}"></script>

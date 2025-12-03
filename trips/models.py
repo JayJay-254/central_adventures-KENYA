@@ -127,16 +127,34 @@ class Like(models.Model):
 
 # Comments
 class Comment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE, related_name='comments')
     comment = models.TextField()
     time = models.DateTimeField(auto_now_add=True)
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     
     class Meta:
         ordering = ['-time']
     
     def __str__(self):
         return f"Comment by {self.user.username} on {self.image}"
+    
+    def is_reply(self):
+        return self.parent_comment is not None
+
+
+# Comment Likes
+class CommentLike(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='likes')
+    is_like = models.BooleanField(default=True)  # True = like/thumbs up, False = dislike/thumbs down
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'comment')
+    
+    def __str__(self):
+        return f"{self.user.username} {'likes' if self.is_like else 'dislikes'} comment {self.comment.id}"
 
 # Group Chat
 class ChatMessage(models.Model):

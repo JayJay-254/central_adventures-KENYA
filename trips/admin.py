@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory, Like, Comment
+from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory, Like, Comment, CommentLike
 
 
 class AdminRoleInline(admin.StackedInline):
@@ -164,10 +164,10 @@ class LikeAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-	list_display = ('user', 'image_display', 'comment_preview', 'time')
+	list_display = ('user', 'image_display', 'comment_preview', 'time', 'is_reply')
 	readonly_fields = ('time',)
 	search_fields = ('user__username', 'comment', 'image__caption')
-	list_filter = ('time', 'image__trip')
+	list_filter = ('time', 'image__trip', 'parent_comment')
 	
 	def image_display(self, obj):
 		return f"{obj.image.trip.title} - {obj.image.get_media_type_display()}"
@@ -176,3 +176,20 @@ class CommentAdmin(admin.ModelAdmin):
 	def comment_preview(self, obj):
 		return obj.comment[:50] + ('...' if len(obj.comment) > 50 else '')
 	comment_preview.short_description = 'Comment'
+
+
+@admin.register(CommentLike)
+class CommentLikeAdmin(admin.ModelAdmin):
+	list_display = ('user', 'comment_preview', 'like_type', 'created_at')
+	readonly_fields = ('created_at',)
+	search_fields = ('user__username', 'comment__comment')
+	list_filter = ('is_like', 'created_at')
+	
+	def comment_preview(self, obj):
+		preview = obj.comment.comment[:40]
+		return preview + ('...' if len(obj.comment.comment) > 40 else '')
+	comment_preview.short_description = 'Comment'
+	
+	def like_type(self, obj):
+		return '👍 Like' if obj.is_like else '👎 Dislike'
+	like_type.short_description = 'Type'

@@ -326,6 +326,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const galleryCards = document.querySelectorAll('.gallery-card');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
     
     galleryCards.forEach(card => {
         const imageId = card.getAttribute('data-image-id');
@@ -342,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 fetch(`/api/gallery/${imageId}/like/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                        'X-CSRFToken': csrfToken
                     }
                 })
                 .then(response => response.json())
@@ -360,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
             commentBtn.addEventListener('click', function() {
                 commentSection.style.display = commentSection.style.display === 'none' ? 'block' : 'none';
                 if (commentSection.style.display === 'block') {
-                    loadComments(imageId, card);
+                    loadComments(imageId, card, csrfToken);
                 }
             });
         }
@@ -377,7 +378,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         method: 'POST',
                         body: formData,
                         headers: {
-                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                            'X-CSRFToken': csrfToken
                         }
                     })
                     .then(response => response.json())
@@ -385,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (data.success) {
                             commentInput.value = '';
                             card.querySelector('.comment-count').textContent = parseInt(card.querySelector('.comment-count').textContent) + 1;
-                            loadComments(imageId, card);
+                            loadComments(imageId, card, csrfToken);
                         }
                     });
                 }
@@ -413,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    function loadComments(imageId, card) {
+    function loadComments(imageId, card, csrfToken) {
         fetch(`/api/gallery/${imageId}/comments/`)
             .then(response => response.json())
             .then(data => {
@@ -423,15 +424,344 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.comments.forEach(comment => {
                     const commentDiv = document.createElement('div');
                     commentDiv.className = 'comment-item';
+                    commentDiv.setAttribute('data-comment-id', comment.id);
+                    
+                    const menuBtn = comment.is_owner ? `
+                        <div class="comment-menu">
+                            <button class="comment-menu-btn" title="More options">⋮</button>
+                            <div class="comment-menu-dropdown" style="display: none;">
+                                <button class="menu-item edit-comment-btn">✏️ Edit</button>
+                                <button class="menu-item delete-comment-btn">🗑️ Delete</button>
+                            </div>
+                        </div>
+                    ` : '';
+                    
+                    const likesDislikesBtn = `
+                        <div class="comment-reactions">
+                            <button class="react-btn like-comment" title="Like" data-status="${comment.user_like_status === 'like' ? 'active' : ''}">
+                                👍 <span>${comment.likes}</span>
+                            </button>
+                            <button class="react-btn dislike-comment" title="Dislike" data-status="${comment.user_like_status === 'dislike' ? 'active' : ''}">
+                                👎 <span>${comment.dislikes}</span>
+                            </button>
+                            <button class="react-btn reply-btn">💬 Reply</button>
+                        </div>
+                    `;
+                    
                     commentDiv.innerHTML = `
-                        <div class="comment-author">${comment.username}</div>
+                        <div class="comment-header">
+                            <div class="comment-author-info">
+                                ${comment.avatar ? `<img src="${comment.avatar}" alt="${comment.username}" class="comment-avatar">` : '<i class="fas fa-user-circle"></i>'}
+                                <span class="comment-author">${comment.username}</span>
+                            </div>
+                            ${menuBtn}
+                        </div>
                         <div class="comment-text">${comment.comment}</div>
                         <div class="comment-time">${comment.time}</div>
+                        ${likesDislikesBtn}
+                        <div class="reply-section" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--sand-light);">
+                            <input type="text" class="reply-input" placeholder="Write a reply...">
+                            <button class="submit-reply">Reply</button>
+                        </div>
+                        ${comment.replies.length > 0 ? `
+                            <div class="replies-container" style="margin-top: 15px; padding-left: 20px; border-left: 2px solid var(--sand-light);">
+                                ${comment.replies.map(reply => `
+                                    <div class="reply-item" style="padding: 10px 0;">
+                                        <div class="comment-author-info" style="margin-bottom: 5px;">
+                                            ${reply.avatar ? `<img src="${reply.avatar}" alt="${reply.username}" class="comment-avatar" style="width: 20px; height: 20px;">` : '<i class="fas fa-user-circle"></i>'}
+                                            <span class="comment-author">${reply.username}</span>
+                                        </div>
+                                        <div class="comment-text">${reply.comment}</div>
+                                        <div class="comment-time" style="font-size: 0.7rem;">${reply.time}</div>
+                                        <div class="comment-reactions" style="margin-top: 5px;">
+                                            <span style="font-size: 0.8rem;">👍 ${reply.likes}</span>
+                                            <span style="font-size: 0.8rem;">👎 ${reply.dislikes}</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     `;
                     commentsList.appendChild(commentDiv);
+                    
+                    // Attach event listeners to dynamically created elements
+                    if (comment.is_owner) {
+                        const menuBtn = commentDiv.querySelector('.comment-menu-btn');
+                        const dropdown = commentDiv.querySelector('.comment-menu-dropdown');
+                        const editBtn = commentDiv.querySelector('.edit-comment-btn');
+                        const deleteBtn = commentDiv.querySelector('.delete-comment-btn');
+                        
+                        menuBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+                        });
+                        
+                        editBtn.addEventListener('click', () => editComment(comment.id, commentDiv, csrfToken, imageId, card));
+                        deleteBtn.addEventListener('click', () => deleteComment(comment.id, commentDiv, csrfToken, imageId, card));
+                    }
+                    
+                    // Like/Dislike comment
+                    const likeBtn = commentDiv.querySelector('.like-comment');
+                    const dislikeBtn = commentDiv.querySelector('.dislike-comment');
+                    const replyBtn = commentDiv.querySelector('.reply-btn');
+                    const replySection = commentDiv.querySelector('.reply-section');
+                    const submitReplyBtn = commentDiv.querySelector('.submit-reply');
+                    const replyInput = commentDiv.querySelector('.reply-input');
+                    
+                    likeBtn.addEventListener('click', () => toggleCommentLike(comment.id, true, likeBtn, dislikeBtn, csrfToken));
+                    dislikeBtn.addEventListener('click', () => toggleCommentLike(comment.id, false, dislikeBtn, likeBtn, csrfToken));
+                    
+                    replyBtn.addEventListener('click', () => {
+                        replySection.style.display = replySection.style.display === 'none' ? 'block' : 'none';
+                    });
+                    
+                    if (submitReplyBtn) {
+                        submitReplyBtn.addEventListener('click', () => {
+                            if (replyInput.value.trim()) {
+                                const fd = new FormData();
+                                fd.append('comment', replyInput.value.trim());
+                                
+                                fetch(`/api/comment/${comment.id}/reply/`, {
+                                    method: 'POST',
+                                    body: fd,
+                                    headers: {'X-CSRFToken': csrfToken}
+                                })
+                                .then(r => r.json())
+                                .then(d => {
+                                    if (d.success) {
+                                        replyInput.value = '';
+                                        loadComments(imageId, card, csrfToken);
+                                    }
+                                });
+                            }
+                        });
+                    }
                 });
             });
     }
+    
+    function deleteComment(commentId, commentDiv, csrfToken, imageId, card) {
+        if (confirm('Delete this comment?')) {
+            fetch(`/api/comment/${commentId}/delete/`, {
+                method: 'DELETE',
+                headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    commentDiv.remove();
+                    const count = parseInt(card.querySelector('.comment-count').textContent);
+                    card.querySelector('.comment-count').textContent = Math.max(0, count - 1);
+                }
+            });
+        }
+    }
+    
+    function editComment(commentId, commentDiv, csrfToken, imageId, card) {
+        const textDiv = commentDiv.querySelector('.comment-text');
+        const oldText = textDiv.textContent;
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = oldText;
+        input.className = 'edit-comment-input';
+        
+        const saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save';
+        saveBtn.className = 'edit-save-btn';
+        
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.className = 'edit-cancel-btn';
+        
+        textDiv.innerHTML = '';
+        textDiv.appendChild(input);
+        textDiv.appendChild(saveBtn);
+        textDiv.appendChild(cancelBtn);
+        
+        saveBtn.addEventListener('click', () => {
+            const fd = new FormData();
+            fd.append('comment', input.value.trim());
+            
+            fetch(`/api/comment/${commentId}/edit/`, {
+                method: 'POST',
+                body: fd,
+                headers: {'X-CSRFToken': csrfToken}
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    loadComments(imageId, card, csrfToken);
+                }
+            });
+        });
+        
+        cancelBtn.addEventListener('click', () => {
+            loadComments(imageId, card, csrfToken);
+        });
+    }
+    
+    function toggleCommentLike(commentId, isLike, btn, otherBtn, csrfToken) {
+        const fd = new FormData();
+        fd.append('is_like', isLike);
+        
+        fetch(`/api/comment/${commentId}/like/`, {
+            method: 'POST',
+            body: fd,
+            headers: {'X-CSRFToken': csrfToken}
+        })
+        .then(r => r.json())
+        .then(d => {
+            if (d.success) {
+                btn.setAttribute('data-status', d.user_like_status === (isLike ? 'like' : 'dislike') ? 'active' : '');
+                otherBtn.setAttribute('data-status', '');
+                btn.querySelector('span').textContent = isLike ? d.likes : d.dislikes;
+                otherBtn.querySelector('span').textContent = isLike ? d.dislikes : d.likes;
+            }
+        });
+    }
 });
 </script>
+
+<style>
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.comment-author-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.comment-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.comment-menu {
+    position: relative;
+}
+
+.comment-menu-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.comment-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid var(--sand-light);
+    border-radius: 6px;
+    min-width: 140px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+.menu-item {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--text-dark);
+    transition: background 0.2s;
+}
+
+.menu-item:hover {
+    background: var(--sand-light);
+}
+
+.comment-reactions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.react-btn {
+    padding: 4px 8px;
+    background: var(--sand-light);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.react-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.react-btn[data-status="active"] {
+    background: var(--primary-color);
+    color: white;
+}
+
+.react-btn span {
+    min-width: 20px;
+}
+
+.reply-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--sand-light);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.submit-reply,
+.edit-save-btn,
+.edit-cancel-btn {
+    padding: 6px 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-right: 4px;
+}
+
+.edit-cancel-btn {
+    background: var(--text-muted);
+}
+
+.edit-comment-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+
+.replies-container {
+    background: rgba(0,0,0,0.02);
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.reply-item {
+    font-size: 0.9rem;
+}
+</style>
 {% endblock %}
