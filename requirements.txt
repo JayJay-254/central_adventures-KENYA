@@ -8,3 +8,4 @@ psycopg2-binary
 django-crontab
 django-storages[boto3]
 boto3
+Pillow
