@@ -23,6 +23,16 @@
         <div class="trip-info-box">
             <h1 class="trip-title">{{ trip.title }}</h1>
             
+            <div class="trip-badges">
+                {% if trip.trip_type %}
+                <span class="badge badge-type">{{ trip.trip_type.get_name_display }}</span>
+                {% endif %}
+                <span class="badge badge-status badge-{{ trip.status }}">{{ trip.get_status_display }}</span>
+                {% if trip.price %}
+                <span class="badge badge-price">KES {{ trip.price }}</span>
+                {% endif %}
+            </div>
+            
             <div class="trip-meta">
                 <div class="meta-item">
                     <i class="fas fa-map-marker-alt"></i>
@@ -30,8 +40,14 @@
                 </div>
                 <div class="meta-item">
                     <i class="fas fa-calendar"></i>
-                    <span>{{ trip.date|date:"F d, Y" }}</span>
+                    <span>{{ trip.get_duration_display }}</span>
                 </div>
+                {% if trip.start_date and trip.end_date %}
+                <div class="meta-item">
+                    <i class="fas fa-clock"></i>
+                    <span>{{ trip.start_date|date:"M d" }} - {{ trip.end_date|date:"M d, Y" }}</span>
+                </div>
+                {% endif %}
                 {% if trip.category %}
                 <div class="meta-item">
                     <i class="fas fa-tag"></i>
@@ -182,6 +198,52 @@
 }
 
 .trip-title {
+    font-size: 2.5rem;
+    color: var(--text-dark);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.trip-badges {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.badge {
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.badge-type {
+    background-color: rgba(168, 85, 247, 0.15);
+    color: #7c3aed;
+}
+
+.badge-status {
+    color: white;
+}
+
+.badge-upcoming {
+    background-color: #3b82f6;
+}
+
+.badge-success {
+    background-color: #10b981;
+}
+
+.badge-cancelled {
+    background-color: #ef4444;
+}
+
+.badge-price {
+    background-color: rgba(255, 193, 7, 0.9);
+    color: #333;
+}
     font-size: 32px;
     font-weight: 700;
     margin: 0;

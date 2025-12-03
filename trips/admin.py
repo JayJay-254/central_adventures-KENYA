@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember
+from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory
 
 
 class AdminRoleInline(admin.StackedInline):
@@ -42,12 +42,16 @@ class GalleryImageAdmin(admin.ModelAdmin):
 
 @admin.register(Trip)
 class TripAdmin(admin.ModelAdmin):
-	list_display = ('title', 'location', 'date', 'status', 'featured', 'category')
-	list_filter = ('status', 'date', 'featured', 'category')
+	list_display = ('title', 'trip_type', 'location', 'price', 'status', 'start_date', 'end_date')
+	list_filter = ('status', 'trip_type', 'category', 'date')
 	search_fields = ('title', 'location', 'description_short')
 	fieldsets = (
 		('Basic Information', {
-			'fields': ('title', 'category', 'location', 'date')
+			'fields': ('title', 'category', 'trip_type', 'location', 'price')
+		}),
+		('Trip Dates', {
+			'fields': ('date', 'start_date', 'end_date'),
+			'description': 'Set start and end dates to display trip duration (e.g., 2 nights 3 days)'
 		}),
 		('Description', {
 			'fields': ('description_short', 'description_full')
@@ -80,6 +84,8 @@ class BookingAdmin(admin.ModelAdmin):
 	)
 
 
+
+
 @admin.register(TeamMember)
 class TeamMemberAdmin(admin.ModelAdmin):
 	list_display = ('name', 'position', 'contact', 'order')
@@ -94,6 +100,17 @@ class TeamMemberAdmin(admin.ModelAdmin):
 			'fields': ('created_at',),
 			'classes': ('collapse',)
 		}),
-	)
+		)
 	readonly_fields = ('created_at',)
 
+
+@admin.register(TripType)
+class TripTypeAdmin(admin.ModelAdmin):
+	list_display = ('get_name_display', 'description')
+	fields = ('name', 'description')
+
+
+@admin.register(TripCategory)
+class TripCategoryAdmin(admin.ModelAdmin):
+	list_display = ('name',)
+	search_fields = ('name',)

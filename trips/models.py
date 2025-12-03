@@ -10,6 +10,24 @@ def default_pay_later_deadline():
 # Trip categories
 class TripCategory(models.Model):
     name = models.CharField(max_length=50)
+    
+    def __str__(self):
+        return self.name
+
+
+# Trip Types
+class TripType(models.Model):
+    TYPE_CHOICES = [
+        ('short_trip', 'Short Trip'),
+        ('medium_trip', 'Medium Trip'),
+        ('mega_trip', 'Mega Trip'),
+    ]
+    name = models.CharField(max_length=20, choices=TYPE_CHOICES, unique=True)
+    description = models.CharField(max_length=255, blank=True)
+    
+    def __str__(self):
+        return self.get_name_display()
+
 
 # Trips
 class Trip(models.Model):
@@ -21,13 +39,30 @@ class Trip(models.Model):
     
     title = models.CharField(max_length=200)
     category = models.ForeignKey(TripCategory, on_delete=models.CASCADE)
+    trip_type = models.ForeignKey(TripType, on_delete=models.SET_NULL, null=True, blank=True)
     location = models.CharField(max_length=200)
     date = models.DateField()
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     image_url = models.ImageField(upload_to='trips/', null=True, blank=True)
     description_short = models.CharField(max_length=255)
     description_full = models.TextField()
     featured = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    
+    def get_duration_display(self):
+        """Return duration as 'X nights Y days' format"""
+        if self.start_date and self.end_date:
+            delta = self.end_date - self.start_date
+            days = delta.days
+            nights = max(0, days - 1) if days > 0 else 0
+            if days > 0:
+                return f"{nights} nights {days} days"
+        return "TBD"
+    
+    def __str__(self):
+        return self.title
 
 # Bookings
 class Booking(models.Model):

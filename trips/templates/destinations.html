@@ -28,12 +28,18 @@
             <div class="destination-card" data-trip-id="{{ trip.id }}">
                 <div class="destination-image" style="background-image: url('{% if trip.image_url %}{{ trip.image_url.url }}{% else %}https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200{% endif %}');">
                     <div class="trip-status-badge badge-{{ trip.status }}">{{ trip.get_status_display }}</div>
+                    {% if trip.trip_type %}
+                    <div class="trip-type-badge">{{ trip.trip_type.get_name_display }}</div>
+                    {% endif %}
+                    {% if trip.price %}
+                    <div class="trip-price-tag">KES {{ trip.price }}</div>
+                    {% endif %}
                     <div class="destination-overlay">
                         <h3 class="destination-title">{{ trip.title }}</h3>
                         <p class="destination-description">{{ trip.description_short }}</p>
                         <div class="trip-meta-mini">
                             <span><i class="fas fa-map-marker-alt"></i> {{ trip.location }}</span>
-                            <span><i class="fas fa-calendar"></i> {{ trip.date|date:"M d, Y" }}</span>
+                            <span><i class="fas fa-calendar"></i> {{ trip.get_duration_display }}</span>
                         </div>
                         <a href="{% url 'trip_details' trip.id %}" class="btn btn-small view-details-btn">View Details</a>
                     </div>
@@ -124,6 +130,30 @@
     border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
+}
+
+.trip-type-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background-color: rgba(168, 85, 247, 0.9);
+    color: white;
+}
+
+.trip-price-tag {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    background-color: rgba(255, 193, 7, 0.95);
+    color: #333;
 }
 
 .badge-upcoming {
