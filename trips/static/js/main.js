@@ -27,4 +27,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    
+    // Password Toggle Functionality
+    const passwordToggles = document.querySelectorAll('.password-toggle');
+    passwordToggles.forEach(toggle => {
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('data-target');
+            const passwordField = document.getElementById(targetId);
+            const toggleIcon = this.querySelector('.toggle-icon');
+            
+            if (passwordField) {
+                if (passwordField.type === 'password') {
+                    passwordField.type = 'text';
+                    toggleIcon.textContent = '🙈';
+                } else {
+                    passwordField.type = 'password';
+                    toggleIcon.textContent = '👁️';
+                }
+            }
+        });
+    });
 });

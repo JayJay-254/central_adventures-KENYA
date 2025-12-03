@@ -24,8 +24,8 @@
                     <a href="{% url 'trips' %}" class="nav-link">Bookings</a>
                     <a href="{% url 'gallery' %}" class="nav-link">Gallery</a>
                     <a href="{% url 'management' %}" class="nav-link">Leadership</a>
+                    <a href="{% url 'contact_us' %}" class="nav-link">Contacts</a>
                 {% endif %}
-                <a href="{% url 'contact_us' %}" class="nav-link">Contacts</a>
             </nav>
             <div class="user-nav">
                 {% if user.is_authenticated %}
