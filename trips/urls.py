@@ -20,4 +20,9 @@ urlpatterns = [
     # Location API endpoints
     path('api/counties/', views.api_counties, name='api_counties'),
     path('api/constituencies/', views.api_constituencies, name='api_constituencies'),
+    # Gallery interactions
+    path('api/gallery/<int:image_id>/like/', views.toggle_like, name='toggle_like'),
+    path('api/gallery/<int:image_id>/comment/', views.add_comment, name='add_comment'),
+    path('api/gallery/<int:image_id>/comments/', views.get_comments, name='get_comments'),
+    path('api/gallery/<int:image_id>/download/', views.download_media, name='download_media'),
 ]

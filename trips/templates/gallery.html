@@ -8,23 +8,71 @@
     <div class="gallery-grid" id="galleryGrid">
         {% if gallery_images %}
             {% for image in gallery_images %}
-            <div class="gallery-card">
+            <div class="gallery-card" data-image-id="{{ image.id }}">
                 <div class="gallery-item-wrapper">
-                    {% if image.image_url %}
-                        <img src="{{ image.image_url.url }}" alt="{{ image.caption }}" class="gallery-image">
+                    {% if image.is_image and image.image_url %}
+                        <img src="{{ image.image_url.url }}" alt="{{ image.caption }}" class="gallery-media">
+                    {% elif image.is_video and image.video_url %}
+                        <video class="gallery-media" controls>
+                            <source src="{{ image.video_url.url }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
                     {% else %}
-                        <div class="no-image-placeholder">
-                            <i class="fas fa-image"></i> No Image
+                        <div class="no-media-placeholder">
+                            <i class="fas fa-image"></i> No Media
                         </div>
                     {% endif %}
-                    <div class="gallery-info">
-                        <p class="gallery-caption">{{ image.caption }}</p>
-                        {% if image.trip %}
-                            <p class="gallery-trip">
-                                <i class="fas fa-map-marker-alt"></i> 
-                                <a href="{% url 'trip_details' image.trip.id %}">{{ image.trip.title }}</a>
-                            </p>
+                    
+                    <div class="media-type-badge">
+                        {% if image.is_image %}
+                            <i class="fas fa-image"></i> Photo
+                        {% else %}
+                            <i class="fas fa-video"></i> Video
                         {% endif %}
+                    </div>
+                </div>
+                
+                <div class="gallery-info">
+                    <p class="gallery-caption">{{ image.caption }}</p>
+                    {% if image.trip %}
+                        <p class="gallery-trip">
+                            <i class="fas fa-map-marker-alt"></i> 
+                            <a href="{% url 'trip_details' image.trip.id %}">{{ image.trip.title }}</a>
+                        </p>
+                    {% endif %}
+                    
+                    <div class="gallery-stats">
+                        <span class="stat-item">
+                            <i class="fas fa-heart"></i> 
+                            <span class="like-count">{{ image.likes.count }}</span>
+                        </span>
+                        <span class="stat-item">
+                            <i class="fas fa-comments"></i> 
+                            <span class="comment-count">{{ image.comments.count }}</span>
+                        </span>
+                    </div>
+                    
+                    <div class="gallery-actions">
+                        <button class="action-btn like-btn" data-image-id="{{ image.id }}" title="Like">
+                            <i class="fas fa-heart"></i> Like
+                        </button>
+                        <button class="action-btn comment-btn" data-image-id="{{ image.id }}" title="Comment">
+                            <i class="fas fa-comment"></i> Comment
+                        </button>
+                        <button class="action-btn share-btn" data-image-id="{{ image.id }}" title="Share">
+                            <i class="fas fa-share-alt"></i> Share
+                        </button>
+                        <a href="{% url 'download_media' image.id %}" class="action-btn download-btn" title="Download">
+                            <i class="fas fa-download"></i> Download
+                        </a>
+                    </div>
+                    
+                    <div class="comment-section" style="display: none;">
+                        <div class="comments-list"></div>
+                        <div class="add-comment">
+                            <input type="text" class="comment-input" placeholder="Add a comment...">
+                            <button class="submit-comment">Post</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -32,8 +80,8 @@
         {% else %}
             <div class="empty-state">
                 <i class="fas fa-images" style="font-size: 4rem; color: var(--earth-brown); margin-bottom: 20px;"></i>
-                <p>Gallery photos will be managed by admins and displayed here.</p>
-                <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);">Photos from completed trips and adventures will appear in this space.</p>
+                <p>Gallery photos and videos will be managed by admins and displayed here.</p>
+                <p style="margin-top: 10px; font-size: 0.9rem; color: var(--text-muted);">Photos and videos from completed trips and adventures will appear in this space.</p>
             </div>
         {% endif %}
     </div>
@@ -66,14 +114,14 @@
     height: 280px;
 }
 
-.gallery-image {
+.gallery-media {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
 }
 
-.no-image-placeholder {
+.no-media-placeholder {
     width: 100%;
     height: 100%;
     display: flex;
@@ -84,10 +132,145 @@
     font-size: 3rem;
 }
 
+.media-type-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 .gallery-info {
     padding: 15px;
     background: white;
     border-top: 1px solid var(--sand-light);
+}
+
+.gallery-stats {
+    display: flex;
+    gap: 15px;
+    margin: 10px 0;
+    padding: 10px 0;
+    border-top: 1px solid var(--sand-light);
+    border-bottom: 1px solid var(--sand-light);
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-muted);
+}
+
+.stat-item i {
+    color: var(--primary-color);
+}
+
+.gallery-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.action-btn {
+    padding: 8px 6px;
+    background: var(--sand-light);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dark);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.action-btn.like-btn.liked {
+    background: #ff6b9d;
+    color: white;
+}
+
+.download-btn {
+    text-decoration: none;
+}
+
+.comment-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--sand-light);
+}
+
+.comments-list {
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.comment-item {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sand-light);
+    font-size: 0.85rem;
+}
+
+.comment-item:last-child {
+    border-bottom: none;
+}
+
+.comment-author {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.comment-text {
+    margin: 4px 0;
+    color: var(--text-dark);
+}
+
+.comment-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.add-comment {
+    display: flex;
+    gap: 8px;
+}
+
+.comment-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--sand-light);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.submit-comment {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
 }
 
 .gallery-caption {
@@ -133,6 +316,122 @@
     .gallery-item-wrapper {
         height: 200px;
     }
+    
+    .gallery-actions {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const galleryCards = document.querySelectorAll('.gallery-card');
+    
+    galleryCards.forEach(card => {
+        const imageId = card.getAttribute('data-image-id');
+        const likeBtn = card.querySelector('.like-btn');
+        const commentBtn = card.querySelector('.comment-btn');
+        const shareBtn = card.querySelector('.share-btn');
+        const commentSection = card.querySelector('.comment-section');
+        const submitCommentBtn = card.querySelector('.submit-comment');
+        const commentInput = card.querySelector('.comment-input');
+        
+        // Like functionality
+        if (likeBtn) {
+            likeBtn.addEventListener('click', function() {
+                fetch(`/api/gallery/${imageId}/like/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        likeBtn.classList.toggle('liked');
+                        card.querySelector('.like-count').textContent = data.like_count;
+                    }
+                });
+            });
+        }
+        
+        // Comment toggle
+        if (commentBtn) {
+            commentBtn.addEventListener('click', function() {
+                commentSection.style.display = commentSection.style.display === 'none' ? 'block' : 'none';
+                if (commentSection.style.display === 'block') {
+                    loadComments(imageId, card);
+                }
+            });
+        }
+        
+        // Submit comment
+        if (submitCommentBtn) {
+            submitCommentBtn.addEventListener('click', function() {
+                const commentText = commentInput.value.trim();
+                if (commentText) {
+                    const formData = new FormData();
+                    formData.append('comment', commentText);
+                    
+                    fetch(`/api/gallery/${imageId}/comment/`, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            commentInput.value = '';
+                            card.querySelector('.comment-count').textContent = parseInt(card.querySelector('.comment-count').textContent) + 1;
+                            loadComments(imageId, card);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Share functionality
+        if (shareBtn) {
+            shareBtn.addEventListener('click', function() {
+                const tripTitle = card.querySelector('.gallery-trip a')?.textContent || 'Check this out!';
+                const shareText = `${tripTitle} - Central Adventures`;
+                
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Central Adventures',
+                        text: shareText,
+                        url: window.location.href
+                    });
+                } else {
+                    // Fallback - copy to clipboard
+                    navigator.clipboard.writeText(`${shareText} - ${window.location.href}`);
+                    alert('Link copied to clipboard!');
+                }
+            });
+        }
+    });
+    
+    function loadComments(imageId, card) {
+        fetch(`/api/gallery/${imageId}/comments/`)
+            .then(response => response.json())
+            .then(data => {
+                const commentsList = card.querySelector('.comments-list');
+                commentsList.innerHTML = '';
+                
+                data.comments.forEach(comment => {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment-item';
+                    commentDiv.innerHTML = `
+                        <div class="comment-author">${comment.username}</div>
+                        <div class="comment-text">${comment.comment}</div>
+                        <div class="comment-time">${comment.time}</div>
+                    `;
+                    commentsList.appendChild(commentDiv);
+                });
+            });
+    }
+});
+</script>
 {% endblock %}

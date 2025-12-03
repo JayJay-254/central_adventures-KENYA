@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
-from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory
+from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory, Like, Comment
 
 
 class AdminRoleInline(admin.StackedInline):
@@ -28,15 +28,16 @@ class UserAdmin(DjangoUserAdmin):
 
 @admin.register(GalleryImage)
 class GalleryImageAdmin(admin.ModelAdmin):
-	list_display = ('id', 'trip_display', 'uploaded_by', 'caption', 'image_preview')
-	readonly_fields = ('image_preview', 'uploaded_by')
+	list_display = ('id', 'trip_display', 'media_type', 'uploaded_by', 'caption_preview', 'created_at', 'image_preview')
+	readonly_fields = ('image_preview', 'uploaded_by', 'created_at')
 	search_fields = ('trip__title', 'uploaded_by__username', 'caption')
+	list_filter = ('media_type', 'created_at', 'trip')
 	fieldsets = (
-		('Image Information', {
-			'fields': ('trip', 'image_url', 'caption')
+		('Media Information', {
+			'fields': ('trip', 'media_type', 'image_url', 'video_url', 'caption')
 		}),
 		('Metadata', {
-			'fields': ('uploaded_by',),
+			'fields': ('uploaded_by', 'created_at', 'image_preview'),
 			'classes': ('collapse',)
 		}),
 	)
@@ -49,11 +50,20 @@ class GalleryImageAdmin(admin.ModelAdmin):
 			return f"{obj.trip.title}{trip_type}{status}"
 		return "No Trip"
 	trip_display.short_description = 'Trip'
+	
+	def caption_preview(self, obj):
+		"""Show first 50 chars of caption"""
+		if obj.caption:
+			return obj.caption[:50] + ('...' if len(obj.caption) > 50 else '')
+		return '-'
+	caption_preview.short_description = 'Caption'
 
 	def image_preview(self, obj):
-		if obj.image_url:
-			return f"<img src='{obj.image_url.url}' style='max-height:100px;'/>"
-		return ''
+		if obj.media_type == 'image' and obj.image_url:
+			return f"<img src='{obj.image_url.url}' style='max-height:150px;'/>"
+		elif obj.media_type == 'video' and obj.video_url:
+			return f"<video style='max-height:150px;' controls><source src='{obj.video_url.url}' type='video/mp4'></video>"
+		return 'No media'
 	image_preview.allow_tags = True
 	image_preview.short_description = 'Preview'
 	
@@ -138,3 +148,31 @@ class TripTypeAdmin(admin.ModelAdmin):
 class TripCategoryAdmin(admin.ModelAdmin):
 	list_display = ('name',)
 	search_fields = ('name',)
+
+
+@admin.register(Like)
+class LikeAdmin(admin.ModelAdmin):
+	list_display = ('user', 'image_display', 'created_at')
+	readonly_fields = ('created_at',)
+	search_fields = ('user__username', 'image__caption')
+	list_filter = ('created_at', 'image__trip')
+	
+	def image_display(self, obj):
+		return f"{obj.image.trip.title} - {obj.image.get_media_type_display()}"
+	image_display.short_description = 'Media'
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+	list_display = ('user', 'image_display', 'comment_preview', 'time')
+	readonly_fields = ('time',)
+	search_fields = ('user__username', 'comment', 'image__caption')
+	list_filter = ('time', 'image__trip')
+	
+	def image_display(self, obj):
+		return f"{obj.image.trip.title} - {obj.image.get_media_type_display()}"
+	image_display.short_description = 'Media'
+	
+	def comment_preview(self, obj):
+		return obj.comment[:50] + ('...' if len(obj.comment) > 50 else '')
+	comment_preview.short_description = 'Comment'

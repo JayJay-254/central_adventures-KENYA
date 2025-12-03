@@ -88,22 +88,55 @@ class AdminRole(models.Model):
 
 # Gallery Images
 class GalleryImage(models.Model):
+    MEDIA_TYPE_CHOICES = [
+        ('image', 'Image'),
+        ('video', 'Video'),
+    ]
+    
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
+    media_type = models.CharField(max_length=10, choices=MEDIA_TYPE_CHOICES, default='image')
     image_url = models.ImageField(upload_to='gallery/', null=True, blank=True)
+    video_url = models.FileField(upload_to='gallery/videos/', null=True, blank=True)
     caption = models.TextField()
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.trip.title} - {self.get_media_type_display()}"
+    
+    def is_image(self):
+        return self.media_type == 'image'
+    
+    def is_video(self):
+        return self.media_type == 'video'
 
 # Likes
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE)
+    image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE, related_name='likes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('user', 'image')
+    
+    def __str__(self):
+        return f"{self.user.username} likes {self.image}"
 
 # Comments
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE)
+    image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE, related_name='comments')
     comment = models.TextField()
     time = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-time']
+    
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.image}"
 
 # Group Chat
 class ChatMessage(models.Model):
