@@ -23,7 +23,7 @@ class Trip(models.Model):
     category = models.ForeignKey(TripCategory, on_delete=models.CASCADE)
     location = models.CharField(max_length=200)
     date = models.DateField()
-    image_url = models.CharField(max_length=500)
+    image_url = models.ImageField(upload_to='trips/')
     description_short = models.CharField(max_length=255)
     description_full = models.TextField()
     featured = models.BooleanField(default=False)

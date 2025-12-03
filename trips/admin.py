@@ -83,13 +83,16 @@ class BookingAdmin(admin.ModelAdmin):
 @admin.register(TeamMember)
 class TeamMemberAdmin(admin.ModelAdmin):
 	list_display = ('name', 'position', 'contact', 'order')
-	list_editable = ('order',)
 	fieldsets = (
 		('Personal Information', {
 			'fields': ('name', 'position', 'contact')
 		}),
 		('Details', {
 			'fields': ('bio', 'image', 'order')
+		}),
+		('Metadata', {
+			'fields': ('created_at',),
+			'classes': ('collapse',)
 		}),
 	)
 	readonly_fields = ('created_at',)
