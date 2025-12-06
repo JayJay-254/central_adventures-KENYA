@@ -10,6 +10,7 @@ from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
 from django.core.mail import send_mail
 from django.conf import settings
+from .models import SentEmail
 
 # Home page
 def home(request):
@@ -52,6 +53,7 @@ def contact_us(request):
             # Save the message to database
             contact_message = form.save()
             
+            tag_value = "contact_form"
             # Send email to admin
             subject = f"New Contact Message: {contact_message.subject}"
             message_body = f"""
@@ -76,11 +78,28 @@ This message was sent via the contact form on the Central Adventures website.
                     recipient_list=[settings.EMAIL_HOST_USER],
                     fail_silently=False
                 )
+
+                SentEmail.objects.create(
+                    tag=tag_value,
+                    sender_name=contact_message.name,
+                    sender_email=contact_message.email,
+                    subject=contact_message.subject,
+                    message=contact_message.message,
+                    status='sent'
+                )
                 messages.success(request, 'Thank you! Your message has been sent successfully.')
             except Exception as e:
                 print(f"Email sending failed: {e}")
+                
+                SentEmail.objects.create(
+                    tag=tag_value,
+                    sender_name=contact_message.name,
+                    sender_email=contact_message.email,
+                    subject=contact_message.subject,
+                    message=contact_message.message,
+                    status='failed'
+                )
                 messages.warning(request, 'Your message has been saved, but email notification failed.')
-            
             # Clear form after successful submission
             form = ContactForm()
     else:

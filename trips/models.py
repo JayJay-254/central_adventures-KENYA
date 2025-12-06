@@ -200,3 +200,15 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile for {self.user.username}"
+
+class SentEmail(models.Model):
+    tag = models.CharField(max_length=100)
+    sender_name = models.CharField(max_length=100)
+    sender_email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=50)  # e.g., 'sent', 'failed'
+
+    def __str__(self):
+        return f"Email '{self.subject}' to {self.sender_email} at {self.sent_at}"

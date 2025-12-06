@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory, Like, Comment, CommentLike
-
+from .models import SentEmail
 
 class AdminRoleInline(admin.StackedInline):
 	model = AdminRole
@@ -115,6 +115,9 @@ class BookingAdmin(admin.ModelAdmin):
 		('Approval', {
 			'fields': ('approved',)
 		}),
+		('Disapproval', {
+			'fields': ('disapproval',)
+			}),
 	)
 
 
@@ -193,3 +196,9 @@ class CommentLikeAdmin(admin.ModelAdmin):
 	def like_type(self, obj):
 		return '👍 Like' if obj.is_like else '👎 Dislike'
 	like_type.short_description = 'Type'
+
+@admin.register(SentEmail)
+class SentEmailAdmin(admin.ModelAdmin):
+    list_display = ('tag', 'sender_name', 'sender_email', 'subject', 'sent_at', 'status')
+    list_filter = ('tag', 'status', 'sent_at')
+    search_fields = ('sender_name', 'sender_email', 'subject', 'message')
