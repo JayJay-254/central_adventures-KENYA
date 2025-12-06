@@ -158,11 +158,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # For production, set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD via environment variables
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = '587'
-EMAIL_USE_TLS = 'True'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = os.getenv('centraladventurers@gmail.com')
-EMAIL_HOST_PASSWORD = os.getenv('ntow aolz uiga jsjk')
+EMAIL_HOST_USER = os.environ.get('centraladventurers@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('nkcq zufg affl dcjq')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'centraladventurers@gmail.com')
 
 # Additional production guidance: ensure SECRET_KEY and DEBUG are set in env.
