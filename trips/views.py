@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.http import JsonResponse, FileResponse
 from .models import Trip, Booking, ChatMessage, UserProfile, TeamMember, GalleryImage, Like, Comment, CommentLike
+from django.views.decorators.csrf import csrf_exempt
 from .forms import ContactForm
 from .locations import KENYA_LOCATIONS
 from django.contrib.auth.models import User
@@ -59,7 +60,7 @@ def contact_us(request):
 
         if not subject or not message or not from_email:
             messages.error(request, 'All fields are required.')
-            return render(request, 'contact_us.html')
+            return redirect("contact_us")
         
         email = EmailMessage(
             subject,
@@ -85,9 +86,9 @@ def contact_us(request):
                     time.sleep(2 **attempt)
                 else:
                     messages.error(request, 'Failed to send email after multiple attempts.')
-        return redirect('contact_us')
+        return redirect("contact_us")
     
-    return render(request, "contact_us.html")
+    return render(request, "contacts.html")
 # Group chat page
 @login_required
 def chat_room(request):
@@ -297,56 +298,35 @@ def management_page(request):
 
 # Gallery Like/Unlike
 @login_required
+@csrf_exempt
 def toggle_like(request, image_id):
-    """Toggle like on a gallery image"""
+    image = get_object_or_404(GalleryImage, id=image_id)
     if request.method == 'POST':
-        image = get_object_or_404(GalleryImage, id=image_id)
-        like, created = Like.objects.get_or_create(user=request.user, image=image)
-        
-        if not created:
-            # Unlike
-            like.delete()
-            is_liked = False
-        else:
-            # Like
-            is_liked = True
-        
-        like_count = image.likes.count()
-        return JsonResponse({
-            'success': True,
-            'is_liked': is_liked,
-            'like_count': like_count
-        })
+        user = request.user if request.user.is_authenticated else None
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+            session_key = request.session.session_key
+
+        # Like for authenticated users
+        if user:
+            like, created = Like.objects.get_or_create(user=user, image=image)
+            if not created:
+                like.delete()
+                is_liked = False
+            else:
+                is_liked = True
+        else:  # Guest user like using session
+            like, created = Like.objects.get_or_create(session_key=session_key, image=image)
+            if not created:
+                like.delete()
+                is_liked = False
+            else:
+                is_liked = True
+
+        return JsonResponse({'success': True, 'is_liked': is_liked, 'like_count': image.likes.count()})
+
     return JsonResponse({'success': False}, status=400)
-
-
-# Gallery Add Comment
-@login_required
-def add_comment(request, image_id):
-    """Add comment to gallery image"""
-    if request.method == 'POST':
-        image = get_object_or_404(GalleryImage, id=image_id)
-        comment_text = request.POST.get('comment', '').strip()
-        
-        if comment_text:
-            comment = Comment.objects.create(
-                user=request.user,
-                image=image,
-                comment=comment_text
-            )
-            return JsonResponse({
-                'success': True,
-                'comment_id': comment.id,
-                'username': comment.user.username,
-                'avatar': comment.user.profile.profile_picture.url if hasattr(comment.user, 'profile') and comment.user.profile.profile_picture else '',
-                'comment_text': comment.comment,
-                'time': comment.time.strftime('%b %d, %Y %H:%M')
-            })
-        else:
-            return JsonResponse({'success': False, 'error': 'Comment cannot be empty'}, status=400)
-    
-    return JsonResponse({'success': False}, status=400)
-
 
 # Gallery Download Media
 @login_required
@@ -376,32 +356,34 @@ def download_media(request, image_id):
 def get_comments(request, image_id):
     """Get all comments for a gallery image"""
     image = get_object_or_404(GalleryImage, id=image_id)
-    comments = image.comments.filter(parent_comment__isnull=True)  # Get top-level comments only
-    
+    comments = image.comments.filter(parent_comment__isnull=True)
+
     comments_data = []
     for comment in comments:
+
         avatar = ''
         if hasattr(comment.user, 'profile') and comment.user.profile.profile_picture:
             avatar = comment.user.profile.profile_picture.url
-        
-        # Get comment likes/dislikes
+
         likes = comment.likes.filter(is_like=True).count()
         dislikes = comment.likes.filter(is_like=False).count()
+
         user_like = comment.likes.filter(user=request.user).first()
         user_like_status = None
         if user_like:
             user_like_status = 'like' if user_like.is_like else 'dislike'
-        
-        # Get replies
+
+        # Replies
         replies_data = []
         for reply in comment.replies.all():
+
             reply_avatar = ''
             if hasattr(reply.user, 'profile') and reply.user.profile.profile_picture:
                 reply_avatar = reply.user.profile.profile_picture.url
-            
+
             reply_likes = reply.likes.filter(is_like=True).count()
             reply_dislikes = reply.likes.filter(is_like=False).count()
-            
+
             replies_data.append({
                 'id': reply.id,
                 'username': reply.user.username,
@@ -412,7 +394,7 @@ def get_comments(request, image_id):
                 'likes': reply_likes,
                 'dislikes': reply_dislikes
             })
-        
+
         comments_data.append({
             'id': comment.id,
             'username': comment.user.username,
@@ -425,8 +407,26 @@ def get_comments(request, image_id):
             'user_like_status': user_like_status,
             'replies': replies_data
         })
-    
-    return JsonResponse({'comments': comments_data})
+
+    # Final return (no comma!)
+    return JsonResponse({
+        'success': True,
+        'comments': comments_data
+    })
+
+@login_required
+def add_comment(request, image_id):
+    if request.method == "POST":
+        text = request.POST.get("text")
+        image = get_object_or_404(GalleryImage, id=image_id)
+
+        Comment.objects.create(
+            image=image,
+            user=request.user,
+            text=text
+        )
+
+        return JsonResponse({"status": "success"})
 
 
 # Delete Comment

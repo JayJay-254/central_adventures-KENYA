@@ -2,6 +2,8 @@
 {% block title %}Gallery - Central Adventures{% endblock %}
 {% block content %}
 <section class="gallery-section container">
+    {% csrf_token %}
+    <input type="hidden" id="csrfTokenField" value="{{ csrf_token }}">
     <h2 class="page-title">Gallery</h2>
     <p class="page-subtitle">Memories from our adventures</p>
 
@@ -53,8 +55,8 @@
                     </div>
                     
                     <div class="gallery-actions">
-                        <button class="action-btn like-btn" data-image-id="{{ image.id }}" title="Like">
-                            <i class="fas fa-heart"></i> Like
+                        <button class="action-btn like-btn" data-image-id="likeBtn{{ image.id }}" onclick="toggleLike({{image.id}})" title="Like">
+                            {% if user.is_authenticated and user in image.likes.all %}🧡{% else %}❤{% endif %} Like
                         </button>
                         <button class="action-btn comment-btn" data-image-id="{{ image.id }}" title="Comment">
                             <i class="fas fa-comment"></i> Comment
@@ -326,7 +328,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const galleryCards = document.querySelectorAll('.gallery-card');
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    const csrfToken = document.getElementById('csrfTokenField').value;
+
     
     galleryCards.forEach(card => {
         const imageId = card.getAttribute('data-image-id');
@@ -621,6 +624,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
+function toggleLike(imageId) {
+    fetch(`/api/gallery/${imageId}/like`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`likeCount${imageId}`).innerText= data.like_count;
+            const likeBtn = document.getElementById(`likeBtn${imageId}`);
+            likeBtn.innerText = data.is_liked ? '🧡 Like' : '❤ Like';
+        }
+    });
+
+    fetch(`/api/gallery/${imageId}/comment/`, {
+    method: "POST",
+    headers: {
+        "X-CSRFToken": csrftoken,
+        "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: `text=${encodeURIComponent(commentText)}`
+});
+
+}
+
+
 </script>
 
 <style>
