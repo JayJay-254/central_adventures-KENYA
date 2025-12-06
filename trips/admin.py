@@ -77,14 +77,14 @@ class GalleryImageAdmin(admin.ModelAdmin):
 @admin.register(Trip)
 class TripAdmin(admin.ModelAdmin):
 	list_display = ('title', 'trip_type', 'location', 'price', 'status', 'start_date', 'end_date')
-	list_filter = ('status', 'trip_type', 'category', 'date')
+	list_filter = ('status', 'trip_type', 'date')
 	search_fields = ('title', 'location', 'description_short')
 	fieldsets = (
 		('Basic Information', {
-			'fields': ('title', 'category', 'trip_type', 'location', 'price')
+			'fields': ('title', 'trip_type', 'location', 'price')
 		}),
 		('Trip Dates', {
-			'fields': ('date', 'start_date', 'end_date'),
+			'fields': ('start_date', 'end_date'),
 			'description': 'Set start and end dates to display trip duration (e.g., 2 nights 3 days)'
 		}),
 		('Description', {

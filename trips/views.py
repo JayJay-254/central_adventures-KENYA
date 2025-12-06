@@ -8,10 +8,14 @@ from .locations import KENYA_LOCATIONS
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
-from django.core.mail import send_mail, BadHeaderError
+from django.core.mail import EmailMessage, BadHeaderError
+from django.contrib import messages
+import logging, time
 from django.conf import settings
 from .models import SentEmail
 from django.http import HttpResponse
+
+logger = logging.getLogger(__name__)
 
 # Home page
 def home(request):
@@ -49,86 +53,41 @@ def book_trip(request, id):
 # Contact us page
 def contact_us(request):
     if request.method == 'POST':
-        name = request.POST.get("name")
-        email = request.POST.get("email")
-        subject = request.POST.get("subject")
-        message = request.POST.get("message")
+        subject = request.POST.get('subject', 'No Subject')
+        message = request.POST.get('message', '')
+        from_email = request.POST.get('email', '')
 
-        full_message = f"From: {name}\nEmail: {email}\n\nMessage:\n{message}"
-
-        try:
-            send_mail(
-                subject, 
-                full_message, 
-                settings.EMAIL_HOST_USER,
-                ["centraladventurers@gmail.com"],
-                fail_silently=False,
-            )
-        except BadHeaderError:
-            return HttpResponse('Invalid header found.')
-        except Exception as e:
-            return HttpResponse(f'An error occurred: {str(e)}')
+        if not subject or not message or not from_email:
+            messages.error(request, 'All fields are required.')
+            return render(request, 'contact_us.html')
         
-        return HttpResponse('Success! Thank you for your message.')
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            # Save the message to database
-            contact_message = form.save()
-            
-            tag_value = "contact_form"
-            # Send email to admin
-            subject = f"New Contact Message: {contact_message.subject}"
-            message_body = f"""
-You have received a new contact message from Central Adventures website.
+        email = EmailMessage(
+            subject,
+            message,
+            from_email,
+            ['centraladventurers@gmail.com']
+        )
 
-From: {contact_message.name}
-Email: {contact_message.email}
-Subject: {contact_message.subject}
-
-Message:
-{contact_message.message}
-
----
-This message was sent via the contact form on the Central Adventures website.
-"""
-            
+        max_retries = 3
+        for attempt in range(1, max_retries +1):
             try:
-                send_mail(
-                    subject=subject,
-                    message=message_body,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[settings.EMAIL_HOST_USER],
-                    fail_silently=False
-                )
-
-                SentEmail.objects.create(
-                    tag=tag_value,
-                    sender_name=contact_message.name,
-                    sender_email=contact_message.email,
-                    subject=contact_message.subject,
-                    message=contact_message.message,
-                    status='sent'
-                )
-                messages.success(request, 'Thank you! Your message has been sent successfully.')
+                email.send(fail_silently=False)
+                messages.success(request, 'Email sent successfully.')
+                logger.info(f"Contact email sent from {from_email} with subject '{subject}'")
+                break
+            except BadHeaderError:
+                messages.error(request, 'Invalid header found.')
+                logger.error(f"BadHeaderError when sending contact email from {from_email}")
+                break
             except Exception as e:
-                print(f"Email sending failed: {e}")
-                
-                SentEmail.objects.create(
-                    tag=tag_value,
-                    sender_name=contact_message.name,
-                    sender_email=contact_message.email,
-                    subject=contact_message.subject,
-                    message=contact_message.message,
-                    status='failed'
-                )
-                messages.warning(request, 'Your message has been saved, but email notification failed.')
-            # Clear form after successful submission
-            form = ContactForm()
-    else:
-        form = ContactForm()
-    # Use the `contacts.html` template for the contact page
-    return render(request, 'contacts.html', {'form': form})
-
+                logger.exception(f"Error sending contact email from {from_email}, attempt {attempt}: {e}")
+                if attempt < max_retries:
+                    time.sleep(2 **attempt)
+                else:
+                    messages.error(request, 'Failed to send email after multiple attempts.')
+        return redirect('contact_us')
+    
+    return render(request, "contact_us.html")
 # Group chat page
 @login_required
 def chat_room(request):
