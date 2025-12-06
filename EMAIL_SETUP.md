@@ -56,7 +56,7 @@ def contact_us(request):
             except Exception as e:
                 messages.warning(request, 'Message saved, email failed.')
             
-            return redirect('contact')
+            return redirect('home')
 ```
 
 **Features**:

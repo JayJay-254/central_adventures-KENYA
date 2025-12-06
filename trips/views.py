@@ -8,9 +8,10 @@ from .locations import KENYA_LOCATIONS
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
-from django.core.mail import send_mail
+from django.core.mail import send_mail, BadHeaderError
 from django.conf import settings
 from .models import SentEmail
+from django.http import HttpResponse
 
 # Home page
 def home(request):
@@ -48,6 +49,27 @@ def book_trip(request, id):
 # Contact us page
 def contact_us(request):
     if request.method == 'POST':
+        name = request.POST.get("name")
+        email = request.POST.get("email")
+        subject = request.POST.get("subject")
+        message = request.POST.get("message")
+
+        full_message = f"From: {name}\nEmail: {email}\n\nMessage:\n{message}"
+
+        try:
+            send_mail(
+                subject, 
+                full_message, 
+                settings.EMAIL_HOST_USER,
+                ["centraladventurers@gmail.com"],
+                fail_silently=False,
+            )
+        except BadHeaderError:
+            return HttpResponse('Invalid header found.')
+        except Exception as e:
+            return HttpResponse(f'An error occurred: {str(e)}')
+        
+        return HttpResponse('Success! Thank you for your message.')
         form = ContactForm(request.POST)
         if form.is_valid():
             # Save the message to database
