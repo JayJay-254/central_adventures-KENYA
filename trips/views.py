@@ -9,7 +9,7 @@ from .locations import KENYA_LOCATIONS
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
-from django.core.mail import EmailMessage, BadHeaderError
+from django.core.mail import EmailMessage, BadHeaderError, send_mail
 from django.contrib import messages
 import logging, time
 from django.conf import settings
@@ -48,8 +48,69 @@ def trip_details(request, id):
 @login_required
 def book_trip(request, id):
     trip = get_object_or_404(Trip, id=id)
-    Booking.objects.create(user=request.user, trip=trip)
-    return redirect("trips")
+
+    if request.method == 'POST':
+        payment_number = request.POST.get('payment_number')
+        payment_amount = request.POST.get('payment_amount')
+
+        if not payment_number or not payment_amount:
+            messages.error(request, 'Payment number and amount are required.')
+            return redirect('trip_details', id=id)
+
+        booking = Booking.objects.create(
+            user=request.user,
+            trip=trip,
+            paid=False,
+            deposit_paid=False,
+            approved=False
+        )
+
+        # Save payment details (optional: create a Payment model if needed)
+        booking.payment_number = payment_number
+        booking.payment_amount = payment_amount
+        booking.save()
+
+        messages.success(request, 'Booking request submitted. Awaiting admin approval.')
+        return redirect('trips')
+
+    return render(request, "trip_details.html", {"trip": trip})
+
+# Admin approval for bookings
+def approve_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'approve':
+            booking.approved = True
+            booking.save()
+
+            # Notify the user
+            send_mail(
+                'Booking Approved',
+                f'Your seat is now reserved for the trip to {booking.trip.title}.',
+                'admin@centraladventures.com',
+                [booking.user.email],
+                fail_silently=False,
+            )
+            messages.success(request, 'Booking approved and user notified.')
+        elif action == 'decline':
+            booking.delete()
+
+            # Notify the user
+            send_mail(
+                'Booking Declined',
+                f'Your booking for the trip to {booking.trip.title} was declined.',
+                'admin@centraladventures.com',
+                [booking.user.email],
+                fail_silently=False,
+            )
+            messages.success(request, 'Booking declined and user notified.')
+
+        return redirect('admin_dashboard')
+
+    return render(request, 'admin_booking_approval.html', {"booking": booking})
 
 # Contact us page
 def contact_us(request):
