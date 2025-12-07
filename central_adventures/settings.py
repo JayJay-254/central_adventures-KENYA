@@ -204,4 +204,4 @@ MPESA_CONSUMER_SECRET = "RXagehIrjVPEhStcuQEx4tFjC14NY50E8eJ1pznDBuMCjoEUTmiYAyA
 MPESA_SHORTCODE = "174379"  
 MPESA_PASSKEY = "4383"
 
-MPESA_CALLBACK_URL = "https://central adventures.com/mpesa/callback/"
+MPESA_CALLBACK_URL = "https://centraladventures.com/mpesa/callback/"
