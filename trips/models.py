@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
-from trips.models import Trip
 
 
 def default_pay_later_deadline():
@@ -89,8 +88,8 @@ class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
     phone = models.CharField(max_length=20)
-    amount = models.PositiveIntegerField()
-    mpesa_receipt = models.CharField(max_length=50, null=True, blank=True)
+    amount = models.PositiveIntegerField(default=0)
+    mpesa_receipt = models.CharField(max_length=50, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
 

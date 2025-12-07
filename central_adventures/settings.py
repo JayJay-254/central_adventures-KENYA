@@ -179,9 +179,9 @@ if os.environ.get('AWS_STORAGE_BUCKET_NAME'):
     # Optionally set a custom domain for S3 CDN
     # AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
 
-MPESA_CONSUMER_KEY = "your_daraja_consumer_key"
-MPESA_CONSUMER_SECRET = "your_daraja_secret"
+MPESA_CONSUMER_KEY = "XzXLAmwabVP8gMcyNSLnRFeEEKAK8C4L5XzhvfMVnbPSTEIo"
+MPESA_CONSUMER_SECRET = "RXagehIrjVPEhStcuQEx4tFjC14NY50E8eJ1pznDBuMCjoEUTmiYAyApvlzYpF81"
 MPESA_SHORTCODE = "174379"  
-MPESA_PASSKEY = "your_lipa_na_mpesa_passkey"
+MPESA_PASSKEY = "4383598"
 
 MPESA_CALLBACK_URL = "https://central adventures.com/mpesa/callback/"

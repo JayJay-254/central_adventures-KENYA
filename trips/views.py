@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 from trips.models import Trip
 from django.views.decorators.csrf import csrf_exempt
 import json
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -557,12 +558,19 @@ def get_mpesa_token():
     return response.json()['access_token']
 
 
+from decimal import Decimal
+
 def payment_page(request, trip_id):
     trip = get_object_or_404(Trip, id=trip_id)
 
     if request.method == "POST":
         phone = request.POST.get("phone")
-        amount = trip.price
+
+        if phone.startswith('0'):
+            phone = '254' + phone[1:]
+        elif phone.startswith('+'):
+            phone = phone[1:]
+        amount = int(trip.price)  # convert Decimal to int
 
         # Create initial booking
         booking = Booking.objects.create(
@@ -573,46 +581,47 @@ def payment_page(request, trip_id):
             status="pending"
         )
 
-        # Prepare STK Push
-        access_token = get_mpesa_token()
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        password = b64encode(f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()).decode()
+        try:
+            access_token = get_mpesa_token()
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            password = b64encode(f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()).decode()
 
-        stk_request = {
-            "BusinessShortCode": settings.MPESA_SHORTCODE,
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": amount,
-            "PartyA": phone,
-            "PartyB": settings.MPESA_SHORTCODE,
-            "PhoneNumber": phone,
-            "CallBackURL": settings.MPESA_CALLBACK_URL,
-            "AccountReference": f"TRIP-{trip_id}",
-            "TransactionDesc": f"Payment for {trip.title}"
-        }
+            stk_request = {
+                "BusinessShortCode": settings.MPESA_SHORTCODE,
+                "Password": password,
+                "Timestamp": timestamp,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount": amount,
+                "PartyA": phone,
+                "PartyB": settings.MPESA_SHORTCODE,
+                "PhoneNumber": phone,
+                "CallBackURL": settings.MPESA_CALLBACK_URL,
+                "AccountReference": f"TRIP-{trip_id}",
+                "TransactionDesc": f"Payment for {trip.title}"
+            }
 
-        headers = {"Authorization": f"Bearer {access_token}"}
+            headers = {"Authorization": f"Bearer {access_token}"}
 
-        response = requests.post(
-            "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
-            json=stk_request,
-            headers=headers
-        )
+            response = requests.post(
+                "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+                json=stk_request,
+                headers=headers,
+                timeout=10
+            )
 
-        if response.status_code == 200:
-            return render(request, "payment_page.html", {
-                "trip": trip,
-                "message": "Enter M-Pesa PIN to complete payment."
-            })
-        else:
-            return render(request, "payment_page.html", {
-                "trip": trip,
-                "message": "Payment request failed. Try again."
-            })
+            data = response.json()
+
+            if data.get("ResponseCode") == "0":
+                message = "STK Push sent! Enter your M-Pesa PIN to complete payment."
+            else:
+                message = f"Payment request failed: {data.get('errorMessage', 'Unknown error')}"
+
+        except requests.exceptions.RequestException as e:
+            message = f"Payment request failed: {str(e)}"
+
+        return render(request, "payment_page.html", {"trip": trip, "message": message})
 
     return render(request, "payment_page.html", {"trip": trip})
-
 @csrf_exempt
 def mpesa_callback(request):
     data = json.loads(request.body.decode("utf-8"))

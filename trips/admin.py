@@ -106,7 +106,7 @@ class BookingAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     search_fields = ("user__username", "trip__title", "mpesa_receipt")
 
-admin.site.register(Booking, BookingAdmin)
+# admin.site.register(Booking, BookingAdmin)
 
 
 

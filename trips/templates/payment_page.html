@@ -1,19 +1,111 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="payment-section container-small">
-    <h2>Pay for {{ trip.title }}</h2>
-    <p>Amount: KES {{ trip.price }}</p>
+    <h2 class="payment-title">Pay for {{ trip.title }}</h2>
+    <p class="payment-amount">Amount: <strong>KES {{ trip.price }}</strong></p>
 
-    <form method="POST">
+    <form method="POST" class="payment-form">
         {% csrf_token %}
-        <label>Phone Number (Safaricom M-Pesa):</label>
-        <input type="text" name="phone" required placeholder="07XXXXXXXX" />
+        <div class="form-group">
+            <label for="phone">Phone Number (Safaricom M-Pesa):</label>
+            <input type="text" id="phone" name="phone" required placeholder="07XXXXXXXX" />
+        </div>
 
-        <button type="submit" class="btn btn-primary">Pay Now</button>
+        <button type="submit" class="btn btn-primary btn-block">Pay Now</button>
     </form>
 
     {% if message %}
         <p class="alert alert-info">{{ message }}</p>
     {% endif %}
 </section>
+
+<style>
+.payment-section {
+    max-width: 500px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: #fefefe;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.payment-title {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: #1f2937; /* dark gray */
+}
+
+.payment-amount {
+    font-size: 1.2rem;
+    margin-bottom: 25px;
+    color: #10b981; /* green for amount */
+}
+
+.payment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #374151; /* medium gray */
+}
+
+.form-group input {
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+.btn {
+    padding: 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+.alert {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: 500;
+}
+</style>
 {% endblock %}
+
