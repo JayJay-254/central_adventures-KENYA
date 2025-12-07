@@ -80,7 +80,7 @@
             <div class="trip-actions">
                 {% if trip.status == 'upcoming' %}
                     {% if user.is_authenticated %}
-                        <a href="{% url 'book' trip.id %}" class="btn btn-primary btn-lg">
+                        <a href="{% url 'payment_page' trip.id %}" class="btn btn-primary btn-lg">
                             <i class="fas fa-check-circle"></i> Book Now
                         </a>
                     {% else %}

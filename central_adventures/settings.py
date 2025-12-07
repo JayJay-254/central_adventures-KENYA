@@ -157,12 +157,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Email Configuration
 # For production, set EMAIL_HOST_USER and EMAIL_HOST_PASSWORD via environment variables
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.sendgrid.net'
+EMAIL_HOST = 'smtp.send.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = 'api_key'
-EMAIL_HOST_PASSWORD = os.environ.get('SENDGRID_API_KEY')
+EMAIL_HOST_USER = 'centraladventurers@gmail.com'
+EMAIL_HOST_PASSWORD = 'nkcq zufg affl dcjq'
 DEFAULT_FROM_EMAIL =  'centraladventurers@gmail.com'
 
 # Additional production guidance: ensure SECRET_KEY and DEBUG are set in env.
@@ -178,3 +178,10 @@ if os.environ.get('AWS_STORAGE_BUCKET_NAME'):
     AWS_QUERYSTRING_AUTH = False
     # Optionally set a custom domain for S3 CDN
     # AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+
+MPESA_CONSUMER_KEY = "your_daraja_consumer_key"
+MPESA_CONSUMER_SECRET = "your_daraja_secret"
+MPESA_SHORTCODE = "174379"  
+MPESA_PASSKEY = "your_lipa_na_mpesa_passkey"
+
+MPESA_CALLBACK_URL = "https://central adventures.com/mpesa/callback/"

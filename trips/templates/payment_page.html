@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="payment-section container-small">
+    <h2>Pay for {{ trip.title }}</h2>
+    <p>Amount: KES {{ trip.price }}</p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <label>Phone Number (Safaricom M-Pesa):</label>
+        <input type="text" name="phone" required placeholder="07XXXXXXXX" />
+
+        <button type="submit" class="btn btn-primary">Pay Now</button>
+    </form>
+
+    {% if message %}
+        <p class="alert alert-info">{{ message }}</p>
+    {% endif %}
+</section>
+{% endblock %}

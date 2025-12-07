@@ -2,6 +2,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
+from trips.models import Trip
 
 
 def default_pay_later_deadline():
@@ -74,6 +75,27 @@ class Booking(models.Model):
     book_date = models.DateTimeField(auto_now_add=True)
     pay_later_deadline = models.DateTimeField(default=default_pay_later_deadline)
 
+    def __str__(self):
+        return f"Booking by {self.user.username} for {self.trip.title}"
+    
+class Booking(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending Payment'),
+        ('paid', 'Paid'),
+        ('approved', 'Approved by Admin'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    trip = models.ForeignKey(Trip, on_delete=models.CASCADE)
+    phone = models.CharField(max_length=20)
+    amount = models.PositiveIntegerField()
+    mpesa_receipt = models.CharField(max_length=50, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.trip.title}"
 # Admin Roles
 class AdminRole(models.Model):
     ROLE_CHOICES = [

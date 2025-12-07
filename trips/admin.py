@@ -4,6 +4,7 @@ from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from .models import UserProfile, AdminRole, GalleryImage, Trip, Booking, TeamMember, TripType, TripCategory, Like, Comment, CommentLike
 from .models import SentEmail
 
+
 class AdminRoleInline(admin.StackedInline):
 	model = AdminRole
 	can_delete = False
@@ -101,25 +102,11 @@ class TripAdmin(admin.ModelAdmin):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-	list_display = ('id', 'user', 'trip', 'paid', 'approved', 'book_date')
-	list_filter = ('paid', 'approved', 'book_date')
-	search_fields = ('user__username', 'trip__title')
-	readonly_fields = ('book_date',)
-	fieldsets = (
-		('Booking Information', {
-			'fields': ('user', 'trip', 'book_date')
-		}),
-		('Payment Status', {
-			'fields': ('paid', 'deposit_paid', 'pay_later_deadline')
-		}),
-		('Approval', {
-			'fields': ('approved',)
-		}),
-		('Disapproval', {
-			'fields': ('disapproval',)
-			}),
-	)
+    list_display = ("user", "trip", "amount", "status", "mpesa_receipt")
+    list_filter = ("status",)
+    search_fields = ("user__username", "trip__title", "mpesa_receipt")
 
+admin.site.register(Booking, BookingAdmin)
 
 
 

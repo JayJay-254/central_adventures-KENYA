@@ -15,6 +15,12 @@ import logging, time
 from django.conf import settings
 from .models import SentEmail
 from django.http import HttpResponse
+import requests
+from base64 import b64encode
+from datetime import datetime, timedelta
+from trips.models import Trip
+from django.views.decorators.csrf import csrf_exempt
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -544,3 +550,85 @@ def toggle_comment_like(request, comment_id):
         })
     
     return JsonResponse({'success': False}, status=400)
+
+def get_mpesa_token():
+    url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    response = requests.get(url, auth=(settings.MPESA_CONSUMER_KEY, settings.MPESA_CONSUMER_SECRET))
+    return response.json()['access_token']
+
+
+def payment_page(request, trip_id):
+    trip = get_object_or_404(Trip, id=trip_id)
+
+    if request.method == "POST":
+        phone = request.POST.get("phone")
+        amount = trip.price
+
+        # Create initial booking
+        booking = Booking.objects.create(
+            user=request.user,
+            trip=trip,
+            phone=phone,
+            amount=amount,
+            status="pending"
+        )
+
+        # Prepare STK Push
+        access_token = get_mpesa_token()
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = b64encode(f"{settings.MPESA_SHORTCODE}{settings.MPESA_PASSKEY}{timestamp}".encode()).decode()
+
+        stk_request = {
+            "BusinessShortCode": settings.MPESA_SHORTCODE,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            "Amount": amount,
+            "PartyA": phone,
+            "PartyB": settings.MPESA_SHORTCODE,
+            "PhoneNumber": phone,
+            "CallBackURL": settings.MPESA_CALLBACK_URL,
+            "AccountReference": f"TRIP-{trip_id}",
+            "TransactionDesc": f"Payment for {trip.title}"
+        }
+
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        response = requests.post(
+            "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest",
+            json=stk_request,
+            headers=headers
+        )
+
+        if response.status_code == 200:
+            return render(request, "payment_page.html", {
+                "trip": trip,
+                "message": "Enter M-Pesa PIN to complete payment."
+            })
+        else:
+            return render(request, "payment_page.html", {
+                "trip": trip,
+                "message": "Payment request failed. Try again."
+            })
+
+    return render(request, "payment_page.html", {"trip": trip})
+
+@csrf_exempt
+def mpesa_callback(request):
+    data = json.loads(request.body.decode("utf-8"))
+
+    result = data["Body"]["stkCallback"]["ResultCode"]
+    meta = data["Body"]["stkCallback"].get("CallbackMetadata", {})
+
+    if result == 0:  # Payment successful
+        items = meta["Item"]
+        receipt = [x["Value"] for x in items if x["Name"] == "MpesaReceiptNumber"][0]
+        amount = [x["Value"] for x in items if x["Name"] == "Amount"][0]
+        phone = [x["Value"] for x in items if x["Name"] == "PhoneNumber"][0]
+
+        booking = Booking.objects.get(phone=str(phone), amount=amount, status="pending")
+        booking.status = "paid"
+        booking.mpesa_receipt = receipt
+        booking.save()
+
+    return JsonResponse({"status": "ok"})
