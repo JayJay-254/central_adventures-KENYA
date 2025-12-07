@@ -139,10 +139,40 @@ def contact_us(request):
     if request.method == 'POST':
         form = ContactForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Thank you for reaching out! Your message has been sent.')
+            contact_message = form.save()
+
+            recipient = getattr(settings, 'CONTACT_NOTIFICATION_EMAIL', settings.DEFAULT_FROM_EMAIL)
+            subject = f"New contact message: {contact_message.subject}"
+            body = (
+                f"Name: {contact_message.name}\n"
+                f"Email: {contact_message.email}\n"
+                f"Submitted: {contact_message.submitted_at.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                f"Message:\n{contact_message.message}"
+            )
+
+            try:
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [recipient],
+                    fail_silently=False,
+                    reply_to=[contact_message.email],
+                )
+                messages.success(request, 'Thank you for reaching out! Your message has been sent.')
+            except Exception as exc:
+                logger.exception("Failed to send contact notification email")
+                messages.warning(
+                    request,
+                    'We received your message but could not send email notification. We will review it shortly.',
+                )
+
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'ok'})
             return redirect('contact_us')
         else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
             messages.error(request, 'Please correct the errors below.')
     else:
         form = ContactForm()
