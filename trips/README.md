@@ -10,7 +10,7 @@ Central Adventures is a frontend website for an adventure company in Kenya. The 
 - HTML5
 - CSS3
 - JavaScript (Vanilla)
-- EmailJS (for contact form)
+- Formsplee (for contact form)
 - LocalStorage (for user data)
 
 ## File Structure
@@ -29,7 +29,6 @@ Central Adventures/
 ├── js/
 │   └── main.js            # All JavaScript functionality
 ├── images/                # Folder for images (currently uses online placeholders)
-├── EMAILJS_SETUP.md       # EmailJS setup instructions
 └── README.md              # This file
 ```
 
@@ -147,13 +146,11 @@ Central Adventures/
   - Email
   - Subject
   - Message
-- EmailJS integration for sending emails
+- Formsplee integration for sending emails
 - Success/error status messages
 - Form validation
 
 **Access:** Requires login
-
-**Setup Required:** See EMAILJS_SETUP.md for configuration instructions
 
 ## Navigation Structure
 
@@ -199,7 +196,7 @@ Central Adventures/
 - Responsive design
 
 ### 5. Contact Form
-- EmailJS integration
+- Formsplee integration
 - Form validation
 - Status feedback (success/error messages)
 
@@ -301,11 +298,9 @@ Requires JavaScript to be enabled.
 ## Contact Form Setup
 
 To make the contact form work, you must:
-1. Set up an EmailJS account
+1. Set up a Formsplee account
 2. Configure your email service
 3. Update the credentials in `js/main.js`
-
-See `EMAILJS_SETUP.md` for detailed instructions.
 
 ## Troubleshooting
 
@@ -319,9 +314,9 @@ See `EMAILJS_SETUP.md` for detailed instructions.
 - Replace with local images if needed
 
 ### Contact form not working
-- Make sure EmailJS is properly configured
+- Make sure Formsplee is properly configured
 - Check browser console for errors (F12)
-- Verify your EmailJS credentials in main.js
+- Verify your Formsplee credentials in main.js
 
 ### Page redirects immediately
 - This is normal if you're logged in and try to access index.html
@@ -338,7 +333,7 @@ See `EMAILJS_SETUP.md` for detailed instructions.
 - Semantic HTML5 elements used throughout
 - CSS organized by component
 - JavaScript uses event delegation where appropriate
-- No external dependencies except EmailJS
+- No external dependencies except Formsplee
 
 ## Credits
 

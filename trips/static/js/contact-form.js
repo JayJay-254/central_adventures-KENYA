@@ -1,48 +1,39 @@
-// Contact Form Handler with EmailJS Integration
-// This provides client-side email sending as a fallback/supplement to Django backend
+// Contact Form Handler with Formsplee Integration
+// This provides client-side email sending via Formsplee
 
 document.addEventListener('DOMContentLoaded', function() {
     const contactForm = document.getElementById('contactForm');
-    
+
     if (!contactForm) {
         console.log('Contact form not found');
         return;
     }
-    
-    // Initialize EmailJS (replace with your actual public key from emailjs.com)
-    // You can get your public key from: https://dashboard.emailjs.com/admin/account
-    const emailjsPublicKey = 'YOUR_PUBLIC_KEY_HERE';
-    
-    // Only initialize EmailJS if a valid public key is configured
-    if (emailjsPublicKey && emailjsPublicKey !== 'YOUR_PUBLIC_KEY_HERE') {
-        try {
-            emailjs.init(emailjsPublicKey);
-            console.log('EmailJS initialized');
-        } catch (error) {
-            console.log('EmailJS initialization skipped:', error.message);
-        }
-    } else {
-        console.log('EmailJS public key not configured. Using Django backend email only.');
-    }
-    
+
     // Handle form submission
     contactForm.addEventListener('submit', function(e) {
-        // Let Django handle the form submission via normal POST
-        // This will send the form to the backend which will handle database storage and email
-        console.log('Contact form submitted - processing via Django backend');
+        e.preventDefault(); // Prevent default form submission
+
+        const formData = new FormData(contactForm);
+        const formspleeEndpoint = 'https://formspree.io/f/YOUR_FORMSPLEE_ENDPOINT';
+
+        fetch(formspleeEndpoint, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Message sent successfully!');
+                contactForm.reset();
+            } else {
+                alert('Failed to send message. Please try again later.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again later.');
+        });
     });
 });
-
-// Optional: Function to send email directly via EmailJS (if needed)
-function sendEmailViaEmailJS(contactData) {
-    const templateParams = {
-        to_email: 'centraladventurers@gmail.com',
-        from_name: contactData.name,
-        from_email: contactData.email,
-        subject: contactData.subject,
-        message: contactData.message,
-        reply_to: contactData.email
-    };
-    
-    return emailjs.send('SERVICE_ID', 'TEMPLATE_ID', templateParams);
-}

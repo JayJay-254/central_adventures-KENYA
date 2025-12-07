@@ -74,32 +74,36 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'central_adventures.wsgi.application'
 
-# Use dj-database-url when DATABASE_URL is provided (e.g. Render Postgres)
-try:
-    import dj_database_url
-except Exception:
-    dj_database_url = None
-
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# If a DATABASE_URL is provided (Render/Postgres), parse it
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL and dj_database_url:
-    # DATABASES = {
-    #     'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-    # }
+# Use DATABASE_URL if provided (Render Postgres), otherwise fallback to sqlite
+try:
+    import dj_database_url
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL:
+        DATABASES = {
+            'default': dj_database_url.config(
+                default=DATABASE_URL,
+                conn_max_age=600,
+                ssl_require=False
+            )
+        }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+except ImportError:
+    # Fallback if dj_database_url not installed
     DATABASES = {
-    'default': dj_database_url.config(default=os.environ.get("DATABASE_URL"))
-}
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 
@@ -137,10 +141,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATIC_URL = 'static/'
-STATIC_DIRECTORIES = [BASE_DIR / 'static']
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 # WhiteNoise static files storage (production)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -182,6 +185,6 @@ if os.environ.get('AWS_STORAGE_BUCKET_NAME'):
 MPESA_CONSUMER_KEY = "XzXLAmwabVP8gMcyNSLnRFeEEKAK8C4L5XzhvfMVnbPSTEIo"
 MPESA_CONSUMER_SECRET = "RXagehIrjVPEhStcuQEx4tFjC14NY50E8eJ1pznDBuMCjoEUTmiYAyApvlzYpF81"
 MPESA_SHORTCODE = "174379"  
-MPESA_PASSKEY = "4383598"
+MPESA_PASSKEY = "4383"
 
 MPESA_CALLBACK_URL = "https://central adventures.com/mpesa/callback/"

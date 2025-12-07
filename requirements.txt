@@ -9,3 +9,4 @@ django-crontab
 django-storages[boto3]
 boto3
 Pillow
+requests
