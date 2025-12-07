@@ -86,7 +86,7 @@ class AdminRole(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
 
-# Gallery Images
+# Updated GalleryImage model to ensure images persist across updates
 class GalleryImage(models.Model):
     MEDIA_TYPE_CHOICES = [
         ('image', 'Image'),
@@ -103,6 +103,8 @@ class GalleryImage(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        # Ensure images are not deleted when the code is updated
+        managed = False
     
     def __str__(self):
         return f"{self.trip.title} - {self.get_media_type_display()}"
@@ -125,11 +127,12 @@ class Like(models.Model):
     def __str__(self):
         return f"{self.user.username} likes {self.image}"
 
-# Comments
+# Updated Comment model to support image comments
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comments')
     image = models.ForeignKey(GalleryImage, on_delete=models.CASCADE, related_name='comments')
-    comment = models.TextField()
+    comment = models.TextField(blank=True)
+    comment_image = models.ImageField(upload_to='comments/', null=True, blank=True)
     time = models.DateTimeField(auto_now_add=True)
     parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     

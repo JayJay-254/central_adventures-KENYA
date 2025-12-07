@@ -178,3 +178,6 @@ if os.environ.get('AWS_STORAGE_BUCKET_NAME'):
     AWS_QUERYSTRING_AUTH = False
     # Optionally set a custom domain for S3 CDN
     # AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com'
+
+# Add this setting to handle trailing slashes in URLs
+APPEND_SLASH = True

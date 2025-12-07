@@ -54,41 +54,18 @@ def book_trip(request, id):
 # Contact us page
 def contact_us(request):
     if request.method == 'POST':
-        subject = request.POST.get('subject', 'No Subject')
-        message = request.POST.get('message', '')
-        from_email = request.POST.get('email', '')
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Thank you for reaching out! Your message has been sent.')
+            return redirect('contact_us')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = ContactForm()
 
-        if not subject or not message or not from_email:
-            messages.error(request, 'All fields are required.')
-            return redirect("contact_us")
-        
-        email = EmailMessage(
-            subject,
-            message,
-            from_email,
-            ['centraladventurers@gmail.com']
-        )
+    return render(request, "contacts.html", {"form": form})
 
-        max_retries = 3
-        for attempt in range(1, max_retries +1):
-            try:
-                email.send(fail_silently=False)
-                messages.success(request, 'Email sent successfully.')
-                logger.info(f"Contact email sent from {from_email} with subject '{subject}'")
-                break
-            except BadHeaderError:
-                messages.error(request, 'Invalid header found.')
-                logger.error(f"BadHeaderError when sending contact email from {from_email}")
-                break
-            except Exception as e:
-                logger.exception(f"Error sending contact email from {from_email}, attempt {attempt}: {e}")
-                if attempt < max_retries:
-                    time.sleep(2 **attempt)
-                else:
-                    messages.error(request, 'Failed to send email after multiple attempts.')
-        return redirect("contact_us")
-    
-    return render(request, "contacts.html")
 # Group chat page
 @login_required
 def chat_room(request):
@@ -417,16 +394,34 @@ def get_comments(request, image_id):
 @login_required
 def add_comment(request, image_id):
     if request.method == "POST":
-        text = request.POST.get("text")
+        logger.debug(f"Incoming POST data: {request.POST}")
+        # Ensure the text field is provided and not empty
+        text = request.POST.get("text", "").strip()
+        if not text:
+            return JsonResponse({"status": "error", "message": "Comment text cannot be empty."}, status=400)
+
         image = get_object_or_404(GalleryImage, id=image_id)
 
-        Comment.objects.create(
+        # Create the comment
+        comment = Comment.objects.create(
             image=image,
             user=request.user,
-            text=text
+            comment=text
         )
 
-        return JsonResponse({"status": "success"})
+        # Return the created comment data
+        return JsonResponse({
+            "status": "success",
+            "comment": {
+                "id": comment.id,
+                "username": comment.user.username,
+                "comment": comment.comment,
+                "time": comment.time.strftime('%b %d, %Y %H:%M'),
+                "likes": 0,
+                "dislikes": 0,
+                "replies": []
+            }
+        })
 
 
 # Delete Comment
