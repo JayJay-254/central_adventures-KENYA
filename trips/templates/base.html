@@ -10,12 +10,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{% static 'images/styles/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'css/loader.css' %}">
     <link rel="stylesheet" href="{% static 'images/styles/css/notifications.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     {% block extra_head %}{% endblock %}
 </head>
 <meta name="csrf_token" content="{{ csrf_token }}">
 <body class="site-root">
+    <!-- Custom Loader -->
+    <div id="page-loader" class="page-loader">
+        <div class="loader-container">
+            <div class="dot dot-1"></div>
+            <div class="dot dot-2"></div>
+            <div class="dot dot-3"></div>
+            <div class="dot dot-4"></div>
+            <div class="dot dot-5"></div>
+        </div>
+    </div>
+
     <header class="main-header">
         <div class="header-content container">
             <a class="site-title" href="{% url 'home' %}">Central Adventures</a>
@@ -99,6 +111,7 @@
         </div>
     </footer>
 
+    <script src="{% static 'js/loader.js' %}"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
     <script src="{% static 'js/main.js' %}"></script>
     {% block extra_scripts %}{% endblock %}
